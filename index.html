@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Recipes" />
+  <title>Family Recipes</title>
+  <style>
+    :root {
+      --bg: #FAF8F5;
+      --surface: #FFFFFF;
+      --surface-subtle: #F4EFE8;
+      --border: #E8E0D5;
+      --text: #1F1B18;
+      --text-muted: #6E655E;
+      --accent: #C45233;
+      --accent-soft: #FBF0EC;
+      --accent-hover: #A84125;
+      --shadow: 0 2px 10px rgba(31, 27, 24, 0.05);
+      --shadow-hover: 0 6px 20px rgba(31, 27, 24, 0.09);
+      --radius: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 20px 16px 48px;
+      padding-top: max(20px, env(safe-area-inset-top));
+      padding-bottom: max(48px, env(safe-area-inset-bottom));
+    }
+
+    /* Header */
+    .app-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      gap: 12px;
+    }
+
+    .app-title {
+      font-family: Georgia, "New York", "Times New Roman", serif;
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin: 0;
+      color: var(--text);
+    }
+
+    .recipe-count {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--accent);
+      background: var(--accent-soft);
+      padding: 4px 12px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    /* Search */
+    .search-wrap {
+      position: relative;
+      margin-bottom: 14px;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      pointer-events: none;
+      font-size: 1rem;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 13px 40px 13px 42px;
+      font-size: 16px; /* prevents iOS zoom */
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      background: var(--surface);
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .search-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(196, 82, 51, 0.12);
+    }
+
+    .search-clear {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: var(--surface-subtle);
+      border: none;
+      color: var(--text-muted);
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .search-clear.visible {
+      display: flex;
+    }
+
+    /* Category Pills */
+    .filter-bar {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      margin-bottom: 16px;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .filter-bar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .filter-pill {
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 8px 16px;
+      border-radius: 999px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+
+    .filter-pill.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #FFFFFF;
+    }
+
+    /* Card Grid */
+    .recipe-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 14px;
+    }
+
+    .recipe-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 18px 16px;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 14px;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .recipe-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: var(--card-accent, var(--accent));
+    }
+
+    .recipe-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-hover);
+      border-color: #D8CEC0;
+    }
+
+    .recipe-card:active {
+      transform: scale(0.985);
+    }
+
+    .card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .card-category {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--card-accent, var(--accent));
+      margin-bottom: 4px;
+    }
+
+    .card-title {
+      font-family: Georgia, "New York", serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+      line-height: 1.25;
+      margin: 0;
+      color: var(--text);
+    }
+
+    .card-chevron {
+      color: #B8AEA3;
+      font-size: 1.4rem;
+      line-height: 1;
+      padding-top: 2px;
+      flex-shrink: 0;
+    }
+
+    .card-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .meta-tag {
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      background: var(--surface-subtle);
+      padding: 4px 10px;
+      border-radius: 8px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 48px 16px;
+      color: var(--text-muted);
+      display: none;
+    }
+
+    /* Detail View */
+    .detail-view {
+      display: none;
+      animation: fadeIn 0.18s ease;
+    }
+
+    .detail-view.active {
+      display: block;
+    }
+
+    .list-view.hidden {
+      display: none;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .detail-nav {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(250, 248, 245, 0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      padding: 12px 0;
+      margin: -12px 0 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      color: var(--text);
+      font-size: 0.95rem;
+      font-weight: 600;
+      padding: 9px 16px;
+      border-radius: 999px;
+      cursor: pointer;
+    }
+
+    .back-btn:active {
+      background: var(--surface-subtle);
+    }
+
+    .detail-hero {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px 20px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+      border-top: 5px solid var(--detail-accent, var(--accent));
+    }
+
+    .detail-title {
+      font-family: Georgia, "New York", serif;
+      font-size: 1.75rem;
+      font-weight: 700;
+      line-height: 1.2;
+      margin: 6px 0 14px;
+    }
+
+    .detail-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .section-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin: 0;
+      letter-spacing: -0.01em;
+    }
+
+    .reset-btn {
+      background: none;
+      border: none;
+      color: var(--accent);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 4px 8px;
+    }
+
+    .ingredient-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .ingredient-group {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--accent);
+      margin: 14px 0 6px;
+    }
+
+    .ingredient-group:first-child {
+      margin-top: 0;
+    }
+
+    .ingredient-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 10px 4px;
+      border-bottom: 1px solid #F2ECE4;
+      cursor: pointer;
+      user-select: none;
+      font-size: 1rem;
+    }
+
+    .ingredient-item:last-child {
+      border-bottom: none;
+    }
+
+    .ingredient-item input[type="checkbox"] {
+      width: 22px;
+      height: 22px;
+      margin: 1px 0 0;
+      accent-color: var(--accent);
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+
+    .ingredient-item.checked span {
+      text-decoration: line-through;
+      color: var(--text-muted);
+    }
+
+    .steps-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .step-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      font-size: 1.02rem;
+      line-height: 1.55;
+    }
+
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .note-box {
+      background: #FDF7EC;
+      border: 1px solid #F0DFC0;
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-size: 0.98rem;
+      color: #5C4726;
+      line-height: 1.55;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- LIST VIEW -->
+    <div id="listView" class="list-view">
+      <header class="app-header">
+        <h1 class="app-title">Family Recipes</h1>
+        <span id="recipeCount" class="recipe-count"></span>
+      </header>
+
+      <div class="search-wrap">
+        <span class="search-icon" aria-hidden="true">&#128269;</span>
+        <input
+          id="searchInput"
+          class="search-input"
+          type="search"
+          placeholder="Search recipes or ingredients..."
+          autocomplete="off"
+        />
+        <button id="clearSearch" class="search-clear" aria-label="Clear search">&times;</button>
+      </div>
+
+      <div id="filterBar" class="filter-bar"></div>
+      <div id="recipeGrid" class="recipe-grid"></div>
+      <div id="emptyState" class="empty-state">No recipes match that search.</div>
+    </div>
+
+    <!-- DETAIL VIEW -->
+    <div id="detailView" class="detail-view">
+      <div class="detail-nav">
+        <button id="backBtn" class="back-btn">&larr; All Recipes</button>
+      </div>
+      <div id="detailContent"></div>
+    </div>
+  </div>
+
+  <script>
+    const RECIPES = [
+      {
+        id: "walking-taco-sliders",
+        title: "Walking Taco Sliders",
+        category: "Tex-Mex",
+        protein: "Ground Beef",
+        method: "Baked",
+        accent: "#C85A32",
+        ingredients: [
+          "1 pkg King's Hawaiian slider rolls (12-count)",
+          "1 lb browned ground beef",
+          "1 packet Siete Foods taco seasoning",
+          "12 slices pepper jack cheese",
+          "Sour cream",
+          "1 can Rotel fire roasted tomatoes and green chilies (drained)",
+          "Lettuce",
+          "2 cups smashed Doritos"
+        ],
+        steps: [
+          "Layer browned, seasoned ground beef and pepper jack cheese slices on the bottom slider rolls in a baking dish.",
+          "Bake until cheese is melted and rolls are warm (original recipe omitted exact time and temperature).",
+          "Top with lettuce, smashed Doritos, sour cream, and drained Rotel, then place top rolls on and serve."
+        ],
+        note: "Original caption omitted written bake times and temperatures — typically 350°F for 12–15 minutes covered works well for Hawaiian roll sliders."
+      },
+      {
+        id: "cheesy-taco-spaghetti",
+        title: "Cheesy Taco Spaghetti",
+        category: "Pasta",
+        protein: "Ground Beef",
+        method: "One-Pot",
+        accent: "#B84A39",
+        ingredients: [
+          "1 lb ground beef",
+          "1/2 onion (diced)",
+          "1/2 bell pepper (diced)",
+          "2 packets taco seasoning",
+          "1 (10 oz) can Rotel (undrained)",
+          "5 cups beef broth",
+          "1 lb spaghetti (broken in half)",
+          "4 oz cream cheese (softened)",
+          "1 cup freshly shredded Colby Jack cheese",
+          "1/3 cup sour cream",
+          "Optional: sliced green onions and extra Colby Jack"
+        ],
+        steps: [
+          "Brown the ground beef, diced onion, and diced bell pepper together, then drain excess grease.",
+          "Stir in the taco seasoning, undrained Rotel, and beef broth.",
+          "Add the broken spaghetti, submerge it in the liquid, cover, and bring to a boil.",
+          "Reduce to a simmer and cook until the spaghetti is tender, stirring 2–3 times.",
+          "Stir in softened cream cheese, shredded Colby Jack, and sour cream until smooth and creamy. Top with optional green onions and extra Colby Jack."
+        ]
+      },
+      {
+        id: "crispy-burger-smash-tacos",
+        title: "Crispy Burger Smash Tacos",
+        category: "Tex-Mex",
+        protein: "Ground Beef",
+        method: "Skillet",
+        accent: "#C85A32",
+        ingredients: [
+          { group: "Tacos" },
+          "Olive oil",
+          "500g lean beef mince",
+          "8 mini flour tortillas",
+          "8 burger cheese slices",
+          "Shredded lettuce",
+          "Caramelized onion",
+          { group: "Burger Sauce" },
+          "1/4 cup Greek yogurt",
+          "45g light mayo",
+          "2 tbsp reduced sugar ketchup",
+          "1 tbsp Dijon mustard",
+          "2 tbsp tomato relish",
+          "2 tbsp diced pickles in brine",
+          "Salt and pepper"
+        ],
+        steps: [
+          "Mix all burger sauce ingredients together in a small bowl and set aside.",
+          "Press a thin layer of beef mince directly onto each mini flour tortilla and season with salt.",
+          "Pan-fry meat-side down in olive oil for 4–5 minutes until browned and crispy.",
+          "Flip and crisp the tortilla side, place a burger cheese slice on top, and cover with a lid for 30 seconds to melt.",
+          "Serve topped with burger sauce, caramelized onion, and shredded lettuce."
+        ]
+      },
+      {
+        id: "dump-and-bake-pepperoni-pizza-pasta",
+        title: "Dump & Bake Pepperoni Pizza Pasta",
+        category: "Pasta",
+        protein: "Pepperoni",
+        method: "Baked",
+        accent: "#A83B3B",
+        ingredients: [
+          "1 lb uncooked rotini",
+          "1 jar (24 oz) marinara or pizza sauce",
+          "2.5 cups chicken broth",
+          "1 tsp Italian seasoning",
+          "1/2 tsp garlic powder",
+          "1 cup mini pepperoni (plus extra for topping)",
+          "2.5 cups shredded mozzarella (divided)",
+          "1/2 cup grated Parmesan",
+          "Optional: bell peppers, mushrooms, olives, fresh basil"
+        ],
+        steps: [
+          "Preheat oven to 425°F and grease a 9x13-inch baking dish.",
+          "Combine uncooked rotini, marinara, chicken broth, Italian seasoning, garlic powder, and 1 cup mini pepperoni directly in the baking dish.",
+          "Cover tightly with foil and bake for 30–35 minutes.",
+          "Remove foil and stir, adding a splash of extra broth if needed.",
+          "Stir in 1 cup mozzarella, then top with the remaining 1.5 cups mozzarella, grated Parmesan, and extra pepperoni.",
+          "Bake uncovered for 8–15 minutes until melted and bubbly."
+        ]
+      },
+      {
+        id: "creamy-italian-sausage-rigatoni",
+        title: "Creamy Italian Sausage Rigatoni",
+        category: "Pasta",
+        protein: "Italian Sausage",
+        method: "Stovetop",
+        accent: "#5A7D5A",
+        ingredients: [
+          "1 lb mild Italian sausage (casing removed)",
+          "12 oz rigatoni",
+          "2 tbsp unsalted butter",
+          "1 large shallot (finely diced)",
+          "5 garlic cloves (minced)",
+          "1 tsp dried oregano",
+          "1 tsp Kinder's Buttery Steakhouse Seasoning",
+          "1/2 tsp garlic salt",
+          "1/4 tsp black pepper",
+          "1.5 cups heavy cream",
+          "1/2 cup reserved pasta water (reserve 1 cup total)",
+          "3/4 cup freshly grated Parmesan",
+          "1/2 tsp red pepper flakes",
+          "Chopped fresh parsley",
+          "Olive oil (if needed)"
+        ],
+        steps: [
+          "Boil rigatoni until al dente, reserving 1 cup of pasta water before draining.",
+          "Brown the Italian sausage for 6–8 minutes, then remove from the pan.",
+          "Melt butter (add olive oil if needed) and cook diced shallot for 3 minutes. Add minced garlic and seasonings and cook 30 seconds.",
+          "Pour in heavy cream and 1/4 cup reserved pasta water, simmer 3–5 minutes, and whisk in freshly grated Parmesan (use remaining pasta water up to 1/2 cup total as needed).",
+          "Toss the cooked sausage and rigatoni in the sauce, then top with extra Parmesan, red pepper flakes, and chopped parsley."
+        ]
+      },
+      {
+        id: "garlic-butter-steak-and-potatoes",
+        title: "Garlic Butter Steak and Potatoes",
+        category: "Steak & Potatoes",
+        protein: "Steak",
+        method: "Air Fryer + Skillet",
+        accent: "#8A5A3B",
+        ingredients: [
+          { group: "Potatoes" },
+          "1.5 lbs peeled, diced russet potatoes",
+          "2 tbsp oil",
+          "1 tsp paprika",
+          "1 tsp garlic powder",
+          "1 tsp onion powder",
+          "1.5 tsp seasoned salt",
+          "Black pepper",
+          { group: "Steak" },
+          "1.5 lbs cubed steak",
+          "2 tbsp oil",
+          "2 tsp steak seasoning",
+          "Black pepper",
+          "2 tbsp Worcestershire sauce",
+          "1 tbsp butter",
+          { group: "Garlic Butter" },
+          "4 tbsp butter",
+          "2 tbsp minced garlic",
+          "2 tsp parsley"
+        ],
+        steps: [
+          "Toss diced russet potatoes with oil and spices. Air-fry at 400°F for 15–20 minutes, shaking every 5 minutes until crispy.",
+          "Toss cubed steak with oil, steak seasoning, black pepper, and Worcestershire sauce. Sear in a hot skillet with 1 tbsp butter.",
+          "Push the seared steak to the side of the skillet, melt 4 tbsp butter with minced garlic and parsley for about 1 minute, then toss everything together with the air-fried potatoes."
+        ]
+      }
+    ];
+
+    let activeCategory = "All";
+    let searchQuery = "";
+
+    const listView = document.getElementById("listView");
+    const detailView = document.getElementById("detailView");
+    const detailContent = document.getElementById("detailContent");
+    const recipeGrid = document.getElementById("recipeGrid");
+    const filterBar = document.getElementById("filterBar");
+    const searchInput = document.getElementById("searchInput");
+    const clearSearch = document.getElementById("clearSearch");
+    const recipeCount = document.getElementById("recipeCount");
+    const emptyState = document.getElementById("emptyState");
+    const backBtn = document.getElementById("backBtn");
+
+    function countIngredients(list) {
+      return list.filter(i => typeof i === "string").length;
+    }
+
+    function renderFilters() {
+      const categories = ["All", ...new Set(RECIPES.map(r => r.category))];
+      filterBar.innerHTML = "";
+      categories.forEach(cat => {
+        const btn = document.createElement("button");
+        btn.className = "filter-pill" + (cat === activeCategory ? " active" : "");
+        btn.textContent = cat;
+        btn.addEventListener("click", () => {
+          activeCategory = cat;
+          renderFilters();
+          renderGrid();
+        });
+        filterBar.appendChild(btn);
+      });
+    }
+
+    function getFilteredRecipes() {
+      const q = searchQuery.trim().toLowerCase();
+      return RECIPES.filter(r => {
+        const matchesCat = activeCategory === "All" || r.category === activeCategory;
+        if (!matchesCat) return false;
+        if (!q) return true;
+        const haystack = [
+          r.title,
+          r.category,
+          r.protein,
+          r.method,
+          ...r.ingredients.filter(i => typeof i === "string")
+        ].join(" ").toLowerCase();
+        return haystack.includes(q);
+      });
+    }
+
+    function renderGrid() {
+      const filtered = getFilteredRecipes();
+      recipeCount.textContent = `${filtered.length} ${filtered.length === 1 ? "recipe" : "recipes"}`;
+      recipeGrid.innerHTML = "";
+      emptyState.style.display = filtered.length === 0 ? "block" : "none";
+
+      filtered.forEach(recipe => {
+        const card = document.createElement("article");
+        card.className = "recipe-card";
+        card.style.setProperty("--card-accent", recipe.accent || "#C45233");
+        card.innerHTML = `
+          <div class="card-top">
+            <div>
+              <div class="card-category">${recipe.category}</div>
+              <h2 class="card-title">${recipe.title}</h2>
+            </div>
+            <span class="card-chevron" aria-hidden="true">&#8250;</span>
+          </div>
+          <div class="card-meta">
+            <span class="meta-tag">${recipe.protein}</span>
+            <span class="meta-tag">${recipe.method}</span>
+            <span class="meta-tag">${countIngredients(recipe.ingredients)} ingredients</span>
+          </div>
+        `;
+        card.addEventListener("click", () => openRecipe(recipe.id));
+        recipeGrid.appendChild(card);
+      });
+    }
+
+    function openRecipe(id, pushHash = true) {
+      const recipe = RECIPES.find(r => r.id === id);
+      if (!recipe) return;
+
+      if (pushHash) {
+        history.pushState({ recipeId: id }, "", `#${id}`);
+      }
+
+      const ingredientsHtml = recipe.ingredients.map(item => {
+        if (typeof item === "object" && item.group) {
+          return `<li class="ingredient-group">${item.group}</li>`;
+        }
+        return `
+          <li class="ingredient-item">
+            <input type="checkbox" />
+            <span>${item}</span>
+          </li>
+        `;
+      }).join("");
+
+      const stepsHtml = recipe.steps.map((step, idx) => `
+        <li class="step-item">
+          <span class="step-num">${idx + 1}</span>
+          <span>${step}</span>
+        </li>
+      `).join("");
+
+      const noteHtml = recipe.note ? `
+        <section class="detail-section">
+          <div class="section-header">
+            <h3 class="section-title">Notes</h3>
+          </div>
+          <div class="note-box">${recipe.note}</div>
+        </section>
+      ` : "";
+
+      detailContent.innerHTML = `
+        <div class="detail-hero" style="--detail-accent: ${recipe.accent || '#C45233'}">
+          <div class="card-category" style="color: ${recipe.accent || '#C45233'}">${recipe.category}</div>
+          <h1 class="detail-title">${recipe.title}</h1>
+          <div class="card-meta">
+            <span class="meta-tag">${recipe.protein}</span>
+            <span class="meta-tag">${recipe.method}</span>
+          </div>
+        </div>
+
+        <section class="detail-section">
+          <div class="section-header">
+            <h3 class="section-title">Ingredients</h3>
+            <button id="resetChecks" class="reset-btn">Reset checks</button>
+          </div>
+          <ul class="ingredient-list">${ingredientsHtml}</ul>
+        </section>
+
+        <section class="detail-section">
+          <div class="section-header">
+            <h3 class="section-title">Instructions</h3>
+          </div>
+          <ol class="steps-list">${stepsHtml}</ol>
+        </section>
+
+        ${noteHtml}
+      `;
+
+      detailContent.querySelectorAll(".ingredient-item").forEach(li => {
+        const cb = li.querySelector("input[type='checkbox']");
+        li.addEventListener("click", (e) => {
+          if (e.target !== cb) cb.checked = !cb.checked;
+          li.classList.toggle("checked", cb.checked);
+        });
+      });
+
+      const resetBtn = document.getElementById("resetChecks");
+      resetBtn.addEventListener("click", () => {
+        detailContent.querySelectorAll(".ingredient-item").forEach(li => {
+          li.classList.remove("checked");
+          li.querySelector("input").checked = false;
+        });
+      });
+
+      listView.classList.add("hidden");
+      detailView.classList.add("active");
+      window.scrollTo({ top: 0, behavior: "instant" });
+    }
+
+    function showList(pushHash = true) {
+      if (pushHash && location.hash) {
+        history.pushState({}, "", location.pathname + location.search);
+      }
+      detailView.classList.remove("active");
+      listView.classList.remove("hidden");
+      window.scrollTo({ top: 0, behavior: "instant" });
+    }
+
+    backBtn.addEventListener("click", () => showList(true));
+
+    window.addEventListener("popstate", () => {
+      const hashId = location.hash.replace(/^#/, "");
+      if (hashId && RECIPES.some(r => r.id === hashId)) {
+        openRecipe(hashId, false);
+      } else {
+        showList(false);
+      }
+    });
+
+    searchInput.addEventListener("input", () => {
+      searchQuery = searchInput.value;
+      clearSearch.classList.toggle("visible", searchQuery.length > 0);
+      renderGrid();
+    });
+
+    clearSearch.addEventListener("click", () => {
+      searchInput.value = "";
+      searchQuery = "";
+      clearSearch.classList.remove("visible");
+      renderGrid();
+      searchInput.focus();
+    });
+
+    renderFilters();
+    renderGrid();
+
+    if (location.hash) {
+      const initialId = location.hash.replace(/^#/, "");
+      if (RECIPES.some(r => r.id === initialId)) {
+        openRecipe(initialId, false);
+      }
+    }
+  </script>
+</body>
+</html>
