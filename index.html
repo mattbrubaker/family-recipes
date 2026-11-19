@@ -1150,7 +1150,10 @@
     <div id="detailView" class="detail-view">
       <div class="detail-nav">
         <button id="backBtn" class="back-btn">&larr; All Recipes</button>
-        <button id="deleteRecipeBtn" class="delete-recipe-btn" type="button" style="display: none">Delete Recipe</button>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <button id="syncCustomRecipeBtn" class="sync-inline-btn" type="button" style="display: none">Save Recipe to GitHub</button>
+          <button id="deleteRecipeBtn" class="delete-recipe-btn" type="button" style="display: none">Delete Recipe</button>
+        </div>
       </div>
       <div id="detailContent"></div>
     </div>
@@ -2114,6 +2117,7 @@
     }
 
     const deleteRecipeBtn = document.getElementById("deleteRecipeBtn");
+    const syncCustomRecipeBtn = document.getElementById("syncCustomRecipeBtn");
     let activeDetailRecipeId = null;
 
     function openRecipe(id, pushHash = true) {
@@ -2122,6 +2126,7 @@
 
       activeDetailRecipeId = recipe.id;
       deleteRecipeBtn.style.display = recipe.isCustom ? "inline-block" : "none";
+      syncCustomRecipeBtn.style.display = recipe.isCustom ? "inline-block" : "none";
 
       if (pushHash) {
         history.pushState({ recipeId: id }, "", `#${id}`);
@@ -2330,6 +2335,36 @@
     }
 
     backBtn.addEventListener("click", () => showList(true));
+
+    syncCustomRecipeBtn.addEventListener("click", async () => {
+      if (!activeDetailRecipeId) return;
+      const token = getGitHubToken();
+      if (!token) {
+        openSyncModal();
+        return;
+      }
+      const customList = getCustomRecipes();
+      const found = customList.find(r => r.id === activeDetailRecipeId);
+      if (!found) return;
+      const { isCustom, ...recipeForRepo } = found;
+      syncCustomRecipeBtn.disabled = true;
+      syncCustomRecipeBtn.textContent = "Saving...";
+      try {
+        await commitRecipeToGitHub(recipeForRepo, token);
+        RECIPES.push(recipeForRepo);
+        saveCustomRecipes(customList.filter(r => r.id !== activeDetailRecipeId));
+        syncCustomRecipeBtn.style.display = "none";
+        deleteRecipeBtn.style.display = "none";
+        renderFilters();
+        renderGrid();
+        showToast("Recipe committed to GitHub!", 4000);
+      } catch (err) {
+        syncCustomRecipeBtn.textContent = "Save Recipe to GitHub";
+        showToast(`GitHub sync failed (${err.message}).`, 5000);
+      } finally {
+        syncCustomRecipeBtn.disabled = false;
+      }
+    });
 
     deleteRecipeBtn.addEventListener("click", () => {
       if (!activeDetailRecipeId) return;
