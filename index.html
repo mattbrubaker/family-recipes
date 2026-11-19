@@ -1759,19 +1759,43 @@
   }
 } /* __RECIPE_META_END__ */;
 
-    function getLastCooked(id) {
-      const localVal = localStorage.getItem(`recipe-last-cooked-${id}`);
-      if (localVal !== null) return localVal;
-      return (RECIPE_META[id] && RECIPE_META[id].lastCooked) || "";
+    function getLocalTimedValue(v2Key, legacyKey) {
+      try {
+        const raw = localStorage.getItem(v2Key);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed.value === "string") return parsed;
+        }
+      } catch {}
+      const legacy = localStorage.getItem(legacyKey);
+      if (legacy !== null) return { value: legacy, updatedAt: 2 };
+      return null;
     }
 
-    function setLastCooked(id, dateStr) {
-      const key = `recipe-last-cooked-${id}`;
-      if (dateStr) {
-        localStorage.setItem(key, dateStr);
-      } else {
-        localStorage.removeItem(key);
-      }
+    function getLastCooked(id) {
+      const meta = RECIPE_META[id] || {};
+      const metaTime = meta.cookedUpdatedAt || (meta.lastCooked !== undefined ? 1 : 0);
+      const local = getLocalTimedValue(`recipe-last-cooked-v2-${id}`, `recipe-last-cooked-${id}`);
+      if (local && local.updatedAt >= metaTime) return local.value;
+      return meta.lastCooked || "";
+    }
+
+    function setLastCooked(id, dateStr, updatedAt = Date.now()) {
+      localStorage.setItem(`recipe-last-cooked-v2-${id}`, JSON.stringify({ value: dateStr || "", updatedAt }));
+      localStorage.removeItem(`recipe-last-cooked-${id}`);
+    }
+
+    function getSavedNote(id) {
+      const meta = RECIPE_META[id] || {};
+      const metaTime = meta.notesUpdatedAt || (meta.userNotes !== undefined ? 1 : 0);
+      const local = getLocalTimedValue(`recipe-notes-v2-${id}`, `recipe-notes-${id}`);
+      if (local && local.updatedAt >= metaTime) return local.value;
+      return meta.userNotes || "";
+    }
+
+    function setSavedNote(id, text, updatedAt = Date.now()) {
+      localStorage.setItem(`recipe-notes-v2-${id}`, JSON.stringify({ value: text, updatedAt }));
+      localStorage.removeItem(`recipe-notes-${id}`);
     }
 
     function formatShortDate(dateStr) {
@@ -2122,9 +2146,7 @@
         </li>
       `).join("");
 
-      const storageKey = `recipe-notes-${recipe.id}`;
-      const localNote = localStorage.getItem(storageKey);
-      const savedNote = localNote !== null ? localNote : ((RECIPE_META[recipe.id] && RECIPE_META[recipe.id].userNotes) || "");
+      const savedNote = getSavedNote(recipe.id);
       const tipHtml = recipe.note ? `<div class="note-box">${escapeHtml(recipe.note)}</div>` : "";
       const lastCooked = getLastCooked(recipe.id);
 
@@ -2190,7 +2212,7 @@
 
       let saveTimer;
       notesEl.addEventListener("input", () => {
-        localStorage.setItem(storageKey, notesEl.value);
+        setSavedNote(recipe.id, notesEl.value);
         saveStatus.classList.add("visible");
         clearTimeout(saveTimer);
         saveTimer = setTimeout(() => {
@@ -2249,12 +2271,13 @@
           return;
         }
         const dateVal = lastCookedCheck.checked ? (lastCookedDate.value || getTodayISO()) : "";
+        const now = Date.now();
         syncLastCookedBtn.disabled = true;
         syncLastCookedBtn.textContent = "Saving...";
         try {
-          await commitRecipeMetaToGitHub(recipe.id, { lastCooked: dateVal }, `Update last cooked: ${recipe.title}`, token);
-          RECIPE_META[recipe.id] = { ...(RECIPE_META[recipe.id] || {}), lastCooked: dateVal };
-          localStorage.removeItem(`recipe-last-cooked-${recipe.id}`);
+          await commitRecipeMetaToGitHub(recipe.id, { lastCooked: dateVal, cookedUpdatedAt: now }, `Update last cooked: ${recipe.title}`, token);
+          RECIPE_META[recipe.id] = { ...(RECIPE_META[recipe.id] || {}), lastCooked: dateVal, cookedUpdatedAt: now };
+          setLastCooked(recipe.id, dateVal, now);
           syncLastCookedBtn.textContent = "Saved ✓";
           showToast("Last Cooked synced to GitHub!", 4000);
           setTimeout(() => { syncLastCookedBtn.textContent = "Save to GitHub"; }, 2000);
@@ -2273,12 +2296,13 @@
           openSyncModal();
           return;
         }
+        const now = Date.now();
         syncNotesBtn.disabled = true;
         syncNotesBtn.textContent = "Saving...";
         try {
-          await commitRecipeMetaToGitHub(recipe.id, { userNotes: notesEl.value }, `Update notes: ${recipe.title}`, token);
-          RECIPE_META[recipe.id] = { ...(RECIPE_META[recipe.id] || {}), userNotes: notesEl.value };
-          localStorage.removeItem(storageKey);
+          await commitRecipeMetaToGitHub(recipe.id, { userNotes: notesEl.value, notesUpdatedAt: now }, `Update notes: ${recipe.title}`, token);
+          RECIPE_META[recipe.id] = { ...(RECIPE_META[recipe.id] || {}), userNotes: notesEl.value, notesUpdatedAt: now };
+          setSavedNote(recipe.id, notesEl.value, now);
           syncNotesBtn.textContent = "Saved ✓";
           showToast("Notes synced to GitHub!", 4000);
           setTimeout(() => { syncNotesBtn.textContent = "Save to GitHub"; }, 2000);
