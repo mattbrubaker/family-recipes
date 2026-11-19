@@ -452,6 +452,40 @@
       font-size: 0.98rem;
       color: #5C4726;
       line-height: 1.55;
+      margin-bottom: 12px;
+    }
+
+    .notes-textarea {
+      width: 100%;
+      min-height: 110px;
+      padding: 12px 14px;
+      font-family: inherit;
+      font-size: 16px; /* prevents iOS zoom */
+      line-height: 1.5;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      background: #FFFDFB;
+      color: var(--text);
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .notes-textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(196, 82, 51, 0.12);
+    }
+
+    .save-status {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #4B7A54;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .save-status.visible {
+      opacity: 1;
     }
   </style>
 </head>
@@ -668,6 +702,35 @@
           "Toss cubed steak with oil, steak seasoning, black pepper, and Worcestershire sauce. Sear in a hot skillet with 1 tbsp butter.",
           "Push the seared steak to the side of the skillet, melt 4 tbsp butter with minced garlic and parsley for about 1 minute, then toss everything together with the air-fried potatoes."
         ]
+      },
+      {
+        id: "cast-iron-skillet-chicken-pot-pie",
+        title: "Cast-Iron Skillet Chicken Pot Pie",
+        category: "Comfort Food",
+        protein: "Chicken",
+        method: "Skillet + Baked",
+        accent: "#B87333",
+        ingredients: [
+          "2 carrots, chopped",
+          "2 leeks, chopped",
+          "Celery, chopped",
+          "Butter",
+          "White wine (a splash)",
+          "Chicken broth",
+          "Shredded rotisserie chicken",
+          "Peas",
+          "Puff pastry, cut into squares",
+          "Egg wash"
+        ],
+        steps: [
+          "Prep the vegetables: Chop 2 carrots, 2 leeks, and celery.",
+          "Start the base: Heat butter in a cast-iron skillet and cook the vegetables.",
+          "Deglaze and simmer: Add a splash of white wine and chicken broth.",
+          "Build the filling: Stir in shredded rotisserie chicken and peas until creamy.",
+          "Top and glaze: Cut puff pastry into squares, layer them over the skillet filling, and brush with egg wash.",
+          "Bake until the puff pastry is golden brown."
+        ],
+        note: "Exact measurements, seasonings, and bake temperature were not specified."
       }
     ];
 
@@ -778,14 +841,9 @@
         </li>
       `).join("");
 
-      const noteHtml = recipe.note ? `
-        <section class="detail-section">
-          <div class="section-header">
-            <h3 class="section-title">Notes</h3>
-          </div>
-          <div class="note-box">${recipe.note}</div>
-        </section>
-      ` : "";
+      const storageKey = `recipe-notes-${recipe.id}`;
+      const savedNote = localStorage.getItem(storageKey) || "";
+      const tipHtml = recipe.note ? `<div class="note-box">${recipe.note}</div>` : "";
 
       detailContent.innerHTML = `
         <div class="detail-hero" style="--detail-accent: ${recipe.accent || '#C45233'}">
@@ -812,8 +870,33 @@
           <ol class="steps-list">${stepsHtml}</ol>
         </section>
 
-        ${noteHtml}
+        <section class="detail-section">
+          <div class="section-header">
+            <h3 class="section-title">Notes</h3>
+            <span id="saveStatus" class="save-status">Saved</span>
+          </div>
+          ${tipHtml}
+          <textarea
+            id="recipeNotes"
+            class="notes-textarea"
+            placeholder="Add cooking notes, tweaks, or ratings..."
+          ></textarea>
+        </section>
       `;
+
+      const notesEl = document.getElementById("recipeNotes");
+      const saveStatus = document.getElementById("saveStatus");
+      notesEl.value = savedNote;
+
+      let saveTimer;
+      notesEl.addEventListener("input", () => {
+        localStorage.setItem(storageKey, notesEl.value);
+        saveStatus.classList.add("visible");
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(() => {
+          saveStatus.classList.remove("visible");
+        }, 1200);
+      });
 
       detailContent.querySelectorAll(".ingredient-item").forEach(li => {
         const cb = li.querySelector("input[type='checkbox']");
