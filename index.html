@@ -1748,7 +1748,11 @@
       return `${y}-${m}-${d}`;
     }
 
-    const RECIPE_META = /* __RECIPE_META_START__ */ {} /* __RECIPE_META_END__ */;
+    const RECIPE_META = /* __RECIPE_META_START__ */ {
+  "red-cowboy-chili": {
+    "lastCooked": ""
+  }
+} /* __RECIPE_META_END__ */;
 
     function getLastCooked(id) {
       const localVal = localStorage.getItem(`recipe-last-cooked-${id}`);
