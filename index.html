@@ -265,6 +265,34 @@
       display: block;
     }
 
+    .sync-inline-btn {
+      background: var(--accent-soft);
+      color: var(--accent);
+      border: 1.5px solid #E8C5B9;
+      border-radius: 10px;
+      padding: 7px 13px;
+      font-size: 0.86rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s ease;
+    }
+
+    .sync-inline-btn:hover {
+      background: #F7E1D9;
+    }
+
+    .sync-inline-btn:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+
+    .notes-actions-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 10px;
+    }
+
     /* Search */
     .search-wrap {
       position: relative;
@@ -1720,8 +1748,12 @@
       return `${y}-${m}-${d}`;
     }
 
+    const RECIPE_META = /* __RECIPE_META_START__ */ {} /* __RECIPE_META_END__ */;
+
     function getLastCooked(id) {
-      return localStorage.getItem(`recipe-last-cooked-${id}`) || "";
+      const localVal = localStorage.getItem(`recipe-last-cooked-${id}`);
+      if (localVal !== null) return localVal;
+      return (RECIPE_META[id] && RECIPE_META[id].lastCooked) || "";
     }
 
     function setLastCooked(id, dateStr) {
@@ -2082,7 +2114,8 @@
       `).join("");
 
       const storageKey = `recipe-notes-${recipe.id}`;
-      const savedNote = localStorage.getItem(storageKey) || "";
+      const localNote = localStorage.getItem(storageKey);
+      const savedNote = localNote !== null ? localNote : ((RECIPE_META[recipe.id] && RECIPE_META[recipe.id].userNotes) || "");
       const tipHtml = recipe.note ? `<div class="note-box">${escapeHtml(recipe.note)}</div>` : "";
       const lastCooked = getLastCooked(recipe.id);
 
@@ -2106,6 +2139,7 @@
               value="${lastCooked}"
               style="display: ${lastCooked ? "inline-block" : "none"}"
             />
+            <button type="button" id="syncLastCookedBtn" class="sync-inline-btn">Save to GitHub</button>
           </div>
         </div>
 
@@ -2135,6 +2169,9 @@
             class="notes-textarea"
             placeholder="Add cooking notes, tweaks, or ratings..."
           ></textarea>
+          <div class="notes-actions-row">
+            <button type="button" id="syncNotesBtn" class="sync-inline-btn">Save to GitHub</button>
+          </div>
         </section>
       `;
 
@@ -2192,6 +2229,55 @@
           lastCookedCheck.checked = false;
           lastCookedDate.style.display = "none";
           setLastCooked(recipe.id, "");
+        }
+      });
+
+      const syncLastCookedBtn = document.getElementById("syncLastCookedBtn");
+      syncLastCookedBtn.addEventListener("click", async () => {
+        const token = getGitHubToken();
+        if (!token) {
+          openSyncModal();
+          return;
+        }
+        const dateVal = lastCookedCheck.checked ? (lastCookedDate.value || getTodayISO()) : "";
+        syncLastCookedBtn.disabled = true;
+        syncLastCookedBtn.textContent = "Saving...";
+        try {
+          await commitRecipeMetaToGitHub(recipe.id, { lastCooked: dateVal }, `Update last cooked: ${recipe.title}`, token);
+          RECIPE_META[recipe.id] = { ...(RECIPE_META[recipe.id] || {}), lastCooked: dateVal };
+          localStorage.removeItem(`recipe-last-cooked-${recipe.id}`);
+          syncLastCookedBtn.textContent = "Saved ✓";
+          showToast("Last Cooked synced to GitHub!", 4000);
+          setTimeout(() => { syncLastCookedBtn.textContent = "Save to GitHub"; }, 2000);
+        } catch (err) {
+          syncLastCookedBtn.textContent = "Save to GitHub";
+          showToast(`GitHub sync failed (${err.message}).`, 5000);
+        } finally {
+          syncLastCookedBtn.disabled = false;
+        }
+      });
+
+      const syncNotesBtn = document.getElementById("syncNotesBtn");
+      syncNotesBtn.addEventListener("click", async () => {
+        const token = getGitHubToken();
+        if (!token) {
+          openSyncModal();
+          return;
+        }
+        syncNotesBtn.disabled = true;
+        syncNotesBtn.textContent = "Saving...";
+        try {
+          await commitRecipeMetaToGitHub(recipe.id, { userNotes: notesEl.value }, `Update notes: ${recipe.title}`, token);
+          RECIPE_META[recipe.id] = { ...(RECIPE_META[recipe.id] || {}), userNotes: notesEl.value };
+          localStorage.removeItem(storageKey);
+          syncNotesBtn.textContent = "Saved ✓";
+          showToast("Notes synced to GitHub!", 4000);
+          setTimeout(() => { syncNotesBtn.textContent = "Save to GitHub"; }, 2000);
+        } catch (err) {
+          syncNotesBtn.textContent = "Save to GitHub";
+          showToast(`GitHub sync failed (${err.message}).`, 5000);
+        } finally {
+          syncNotesBtn.disabled = false;
         }
       });
 
@@ -2335,6 +2421,7 @@
       const hasToken = Boolean(getGitHubToken());
       syncBtn.textContent = hasToken ? "Sync On" : "Sync";
       syncBtn.classList.toggle("connected", hasToken);
+      saveRecipeSubmitBtn.textContent = hasToken ? "Save to GitHub" : "Save Recipe";
       if (hasToken) {
         addRecipeSyncHint.className = "sync-hint connected";
         addRecipeSyncHint.innerHTML = '<span>GitHub Sync is on — saves directly to all devices.</span><button type="button" class="sync-hint-link" id="openSyncFromForm">Settings</button>';
@@ -2398,6 +2485,50 @@
         body: JSON.stringify({
           message: `Add recipe: ${recipe.title}`,
           content: utf8ToBase64(finalHtml),
+          sha: fileData.sha,
+          branch: GITHUB_BRANCH
+        })
+      });
+
+      if (!putRes.ok) {
+        const errData = await putRes.json().catch(() => ({}));
+        throw new Error(errData.message || `GitHub commit failed (${putRes.status})`);
+      }
+    }
+
+    async function commitRecipeMetaToGitHub(recipeId, patch, commitMessage, token) {
+      const apiUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_FILE}`;
+      const headers = {
+        "Authorization": `Bearer ${token}`,
+        "Accept": "application/vnd.github+json"
+      };
+
+      const getRes = await fetch(`${apiUrl}?ref=${GITHUB_BRANCH}`, { headers });
+      if (!getRes.ok) {
+        const errData = await getRes.json().catch(() => ({}));
+        throw new Error(errData.message || `GitHub read failed (${getRes.status})`);
+      }
+      const fileData = await getRes.json();
+      const currentHtml = base64ToUtf8(fileData.content);
+      const startMarker = "/* __RECIPE_META_START__ */";
+      const endMarker = "/* __RECIPE_META_END__ */";
+      const startIdx = currentHtml.indexOf(startMarker);
+      const endIdx = currentHtml.indexOf(endMarker);
+      if (startIdx === -1 || endIdx === -1 || endIdx <= startIdx) {
+        throw new Error("Could not find recipe metadata block in index.html");
+      }
+
+      const jsonStart = startIdx + startMarker.length;
+      const meta = JSON.parse(currentHtml.slice(jsonStart, endIdx).trim());
+      meta[recipeId] = { ...(meta[recipeId] || {}), ...patch };
+      const updatedHtml = currentHtml.slice(0, jsonStart) + " " + JSON.stringify(meta, null, 2) + " " + currentHtml.slice(endIdx);
+
+      const putRes = await fetch(apiUrl, {
+        method: "PUT",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: commitMessage,
+          content: utf8ToBase64(updatedHtml),
           sha: fileData.sha,
           branch: GITHUB_BRANCH
         })
