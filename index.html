@@ -169,6 +169,102 @@
       cursor: pointer;
     }
 
+    .sync-btn {
+      background: var(--surface);
+      color: var(--text-muted);
+      border: 1.5px solid var(--border);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .sync-btn.connected {
+      color: #3D6B47;
+      background: #EAF3EC;
+      border-color: #B9D8C0;
+    }
+
+    .sync-hint {
+      font-size: 0.84rem;
+      color: var(--text-muted);
+      background: var(--surface-subtle);
+      border-radius: 10px;
+      padding: 9px 12px;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .sync-hint.connected {
+      color: #3D6B47;
+      background: #EAF3EC;
+    }
+
+    .sync-hint-link {
+      background: none;
+      border: none;
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 0.84rem;
+      cursor: pointer;
+      padding: 0;
+      white-space: nowrap;
+      text-decoration: underline;
+    }
+
+    .sync-steps {
+      margin: 0;
+      padding-left: 18px;
+      font-size: 0.86rem;
+      color: var(--text-muted);
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .sync-status-msg {
+      font-size: 0.88rem;
+      font-weight: 600;
+      margin: 0;
+      min-height: 1.2em;
+    }
+
+    .sync-status-msg.ok {
+      color: #3D6B47;
+    }
+
+    .sync-status-msg.err {
+      color: #A83B3B;
+    }
+
+    .toast-banner {
+      position: fixed;
+      left: 16px;
+      right: 16px;
+      top: max(16px, env(safe-area-inset-top));
+      max-width: 520px;
+      margin: 0 auto;
+      background: var(--text);
+      color: #FFFFFF;
+      border-radius: 14px;
+      padding: 12px 16px;
+      font-size: 0.92rem;
+      font-weight: 600;
+      text-align: center;
+      box-shadow: 0 10px 26px rgba(31, 27, 24, 0.25);
+      z-index: 80;
+      display: none;
+    }
+
+    .toast-banner.visible {
+      display: block;
+    }
+
     /* Search */
     .search-wrap {
       position: relative;
@@ -898,6 +994,7 @@
         <h1 class="app-title">Family Recipes</h1>
         <div class="header-actions">
           <span id="recipeCount" class="recipe-count"></span>
+          <button id="syncBtn" class="sync-btn" type="button">Sync</button>
           <button id="addRecipeBtn" class="add-recipe-btn" type="button">+ Recipe</button>
         </div>
       </header>
@@ -953,6 +1050,7 @@
           <h2 class="modal-title">Add New Recipe</h2>
           <button id="closeAddRecipeBtn" class="modal-close" aria-label="Close">&times;</button>
         </div>
+        <p id="addRecipeSyncHint" class="sync-hint"></p>
         <form id="addRecipeForm" class="add-recipe-form">
           <div class="form-group">
             <label class="form-label" for="newTitle">Recipe Title *</label>
@@ -987,11 +1085,38 @@
           </div>
           <div class="modal-actions">
             <button type="button" id="cancelAddRecipeBtn" class="btn-secondary">Cancel</button>
-            <button type="submit" class="btn-primary">Save Recipe</button>
+            <button type="submit" id="saveRecipeSubmitBtn" class="btn-primary">Save Recipe</button>
           </div>
         </form>
       </div>
     </div>
+
+    <!-- SYNC SETTINGS MODAL -->
+    <div id="syncModal" class="modal-backdrop" role="dialog" aria-modal="true">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2 class="modal-title">GitHub Sync Setup</h2>
+          <button id="closeSyncBtn" class="modal-close" aria-label="Close">&times;</button>
+        </div>
+        <p class="modal-note">Save a fine-grained GitHub token on this device so <strong>+ Recipe</strong> commits new recipes straight to <code>index.html</code> across all your devices.</p>
+        <ol class="sync-steps">
+          <li>Open GitHub &rarr; Settings &rarr; Developer settings &rarr; Personal access tokens &rarr; Fine-grained tokens.</li>
+          <li>Select repository <strong>mattbrubaker/family-recipes</strong> only.</li>
+          <li>Under Repository permissions, set <strong>Contents</strong> to <strong>Read and write</strong>, then generate &amp; paste below.</li>
+        </ol>
+        <div class="form-group">
+          <label class="form-label" for="githubTokenInput">GitHub Token</label>
+          <input id="githubTokenInput" class="form-input" type="password" autocomplete="off" placeholder="github_pat_..." />
+        </div>
+        <p id="syncTestStatus" class="sync-status-msg"></p>
+        <div class="modal-actions">
+          <button type="button" id="removeTokenBtn" class="btn-secondary">Remove Token</button>
+          <button type="button" id="saveTokenBtn" class="btn-primary">Save &amp; Test</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="toastBanner" class="toast-banner" role="status" aria-live="polite"></div>
 
     <!-- DETAIL VIEW -->
     <div id="detailView" class="detail-view">
@@ -1568,6 +1693,7 @@
         ],
         note: "Serves 6."
       }
+      // __RECIPE_INSERT_POINT__
     ];
 
     let activeCategory = "All";
@@ -1640,7 +1766,13 @@
     }
 
     function getAllRecipes() {
-      return [...RECIPES, ...getCustomRecipes()];
+      const combined = [...RECIPES, ...getCustomRecipes()];
+      const seen = new Set();
+      return combined.filter(r => {
+        if (seen.has(r.id)) return false;
+        seen.add(r.id);
+        return true;
+      });
     }
 
     function countIngredients(list) {
@@ -2171,11 +2303,174 @@
       window.location.href = "shortcuts://run-shortcut?name=Add%20Groceries";
     });
 
+    const GITHUB_OWNER = "mattbrubaker";
+    const GITHUB_REPO = "family-recipes";
+    const GITHUB_FILE = "index.html";
+    const GITHUB_BRANCH = "main";
+    const GITHUB_TOKEN_KEY = "recipe-github-token";
+
+    const syncBtn = document.getElementById("syncBtn");
+    const syncModal = document.getElementById("syncModal");
+    const githubTokenInput = document.getElementById("githubTokenInput");
+    const syncTestStatus = document.getElementById("syncTestStatus");
+    const addRecipeSyncHint = document.getElementById("addRecipeSyncHint");
+    const saveRecipeSubmitBtn = document.getElementById("saveRecipeSubmitBtn");
+    const toastBanner = document.getElementById("toastBanner");
+
+    let toastTimer;
+    function showToast(msg, duration = 4000) {
+      toastBanner.textContent = msg;
+      toastBanner.classList.add("visible");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toastBanner.classList.remove("visible");
+      }, duration);
+    }
+
+    function getGitHubToken() {
+      return (localStorage.getItem(GITHUB_TOKEN_KEY) || "").trim();
+    }
+
+    function updateSyncUI() {
+      const hasToken = Boolean(getGitHubToken());
+      syncBtn.textContent = hasToken ? "Sync On" : "Sync";
+      syncBtn.classList.toggle("connected", hasToken);
+      if (hasToken) {
+        addRecipeSyncHint.className = "sync-hint connected";
+        addRecipeSyncHint.innerHTML = '<span>GitHub Sync is on — saves directly to all devices.</span><button type="button" class="sync-hint-link" id="openSyncFromForm">Settings</button>';
+      } else {
+        addRecipeSyncHint.className = "sync-hint";
+        addRecipeSyncHint.innerHTML = '<span>Saves on this device only.</span><button type="button" class="sync-hint-link" id="openSyncFromForm">Enable GitHub Sync</button>';
+      }
+      const linkBtn = document.getElementById("openSyncFromForm");
+      if (linkBtn) {
+        linkBtn.addEventListener("click", () => {
+          closeAddRecipeModal();
+          openSyncModal();
+        });
+      }
+    }
+
+    function base64ToUtf8(b64) {
+      const bin = atob(b64.replace(/\n/g, ""));
+      const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+      return new TextDecoder().decode(bytes);
+    }
+
+    function utf8ToBase64(str) {
+      const bytes = new TextEncoder().encode(str);
+      let bin = "";
+      bytes.forEach(b => { bin += String.fromCharCode(b); });
+      return btoa(bin);
+    }
+
+    function formatRecipeForSource(recipe) {
+      const json = JSON.stringify(recipe, null, 2);
+      return json.split("\n").map(line => `      ${line}`).join("\n");
+    }
+
+    async function commitRecipeToGitHub(recipe, token) {
+      const apiUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_FILE}`;
+      const headers = {
+        "Authorization": `Bearer ${token}`,
+        "Accept": "application/vnd.github+json"
+      };
+
+      const getRes = await fetch(`${apiUrl}?ref=${GITHUB_BRANCH}`, { headers });
+      if (!getRes.ok) {
+        const errData = await getRes.json().catch(() => ({}));
+        throw new Error(errData.message || `GitHub read failed (${getRes.status})`);
+      }
+      const fileData = await getRes.json();
+      const currentHtml = base64ToUtf8(fileData.content);
+      const marker = "      // __RECIPE_INSERT_POINT__";
+      if (!currentHtml.includes(marker)) {
+        throw new Error("Could not find recipe insertion point in index.html");
+      }
+
+      const recipeBlock = formatRecipeForSource(recipe);
+      const updatedHtml = currentHtml.replace(marker, `,\n${recipeBlock}\n${marker}`);
+      const finalHtml = updatedHtml.replace("\n,\n" + recipeBlock, ",\n" + recipeBlock);
+
+      const putRes = await fetch(apiUrl, {
+        method: "PUT",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: `Add recipe: ${recipe.title}`,
+          content: utf8ToBase64(finalHtml),
+          sha: fileData.sha,
+          branch: GITHUB_BRANCH
+        })
+      });
+
+      if (!putRes.ok) {
+        const errData = await putRes.json().catch(() => ({}));
+        throw new Error(errData.message || `GitHub commit failed (${putRes.status})`);
+      }
+    }
+
+    function openSyncModal() {
+      githubTokenInput.value = getGitHubToken();
+      syncTestStatus.textContent = "";
+      syncTestStatus.className = "sync-status-msg";
+      syncModal.classList.add("visible");
+    }
+
+    function closeSyncModal() {
+      syncModal.classList.remove("visible");
+    }
+
+    syncBtn.addEventListener("click", openSyncModal);
+    document.getElementById("closeSyncBtn").addEventListener("click", closeSyncModal);
+    syncModal.addEventListener("click", (e) => {
+      if (e.target === syncModal) closeSyncModal();
+    });
+
+    document.getElementById("removeTokenBtn").addEventListener("click", () => {
+      localStorage.removeItem(GITHUB_TOKEN_KEY);
+      githubTokenInput.value = "";
+      syncTestStatus.textContent = "Token removed from this device.";
+      syncTestStatus.className = "sync-status-msg";
+      updateSyncUI();
+    });
+
+    document.getElementById("saveTokenBtn").addEventListener("click", async () => {
+      const token = githubTokenInput.value.trim();
+      if (!token) {
+        syncTestStatus.textContent = "Please paste a GitHub token first.";
+        syncTestStatus.className = "sync-status-msg err";
+        return;
+      }
+      syncTestStatus.textContent = "Testing connection...";
+      syncTestStatus.className = "sync-status-msg";
+      try {
+        const res = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}`, {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Accept": "application/vnd.github+json"
+          }
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const repoInfo = await res.json();
+        if (!repoInfo.permissions || !repoInfo.permissions.push) {
+          throw new Error("Token lacks write access to this repo.");
+        }
+        localStorage.setItem(GITHUB_TOKEN_KEY, token);
+        updateSyncUI();
+        syncTestStatus.textContent = "Connected! Ready to sync recipes.";
+        syncTestStatus.className = "sync-status-msg ok";
+      } catch (err) {
+        syncTestStatus.textContent = `Connection failed: ${err.message}`;
+        syncTestStatus.className = "sync-status-msg err";
+      }
+    });
+
     const addRecipeModal = document.getElementById("addRecipeModal");
     const addRecipeForm = document.getElementById("addRecipeForm");
     const categoryOptions = document.getElementById("categoryOptions");
 
     function openAddRecipeModal() {
+      updateSyncUI();
       const cats = [...new Set(getAllRecipes().map(r => r.category).filter(Boolean))];
       categoryOptions.innerHTML = cats.map(c => `<option value="${escapeHtml(c)}"></option>`).join("");
       addRecipeModal.classList.add("visible");
@@ -2194,7 +2489,7 @@
       if (e.target === addRecipeModal) closeAddRecipeModal();
     });
 
-    addRecipeForm.addEventListener("submit", (e) => {
+    addRecipeForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const title = document.getElementById("newTitle").value.trim();
       const category = document.getElementById("newCategory").value.trim() || "Other";
@@ -2218,7 +2513,7 @@
         id = `${baseId}-${Date.now().toString(36)}`;
       }
 
-      const newRecipe = {
+      const recipeForRepo = {
         id,
         title,
         category,
@@ -2226,14 +2521,44 @@
         method,
         dateAdded: new Date().toISOString(),
         accent: "#C45233",
-        isCustom: true,
         ingredients,
         steps,
         ...(noteText ? { note: noteText } : {})
       };
 
+      const token = getGitHubToken();
+      if (token) {
+        saveRecipeSubmitBtn.disabled = true;
+        saveRecipeSubmitBtn.textContent = "Syncing to GitHub...";
+        try {
+          await commitRecipeToGitHub(recipeForRepo, token);
+          RECIPES.push(recipeForRepo);
+          addRecipeForm.reset();
+          closeAddRecipeModal();
+          activeCategory = "All";
+          renderFilters();
+          renderGrid();
+          showToast("Committed to GitHub! Live on all devices in ~1 min.", 5000);
+        } catch (err) {
+          const customList = getCustomRecipes();
+          customList.push({ ...recipeForRepo, isCustom: true });
+          saveCustomRecipes(customList);
+          if (noteText) localStorage.setItem(`recipe-notes-${id}`, noteText);
+          addRecipeForm.reset();
+          closeAddRecipeModal();
+          activeCategory = "All";
+          renderFilters();
+          renderGrid();
+          showToast(`GitHub sync failed (${err.message}). Saved locally on this device.`, 5500);
+        } finally {
+          saveRecipeSubmitBtn.disabled = false;
+          saveRecipeSubmitBtn.textContent = "Save Recipe";
+        }
+        return;
+      }
+
       const customList = getCustomRecipes();
-      customList.push(newRecipe);
+      customList.push({ ...recipeForRepo, isCustom: true });
       saveCustomRecipes(customList);
       if (noteText) {
         localStorage.setItem(`recipe-notes-${id}`, noteText);
@@ -2244,8 +2569,10 @@
       activeCategory = "All";
       renderFilters();
       renderGrid();
+      showToast("Saved locally on this device. Tap Sync to enable GitHub sync.");
     });
 
+    updateSyncUI();
     renderFilters();
     renderSortBar();
     renderGrid();
