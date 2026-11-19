@@ -49,10 +49,11 @@
     /* Header */
     .app-header {
       display: flex;
-      align-items: baseline;
+      align-items: center;
       justify-content: space-between;
       margin-bottom: 16px;
       gap: 12px;
+      flex-wrap: wrap;
     }
 
     .app-title {
@@ -64,14 +65,108 @@
       color: var(--text);
     }
 
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
     .recipe-count {
       font-size: 0.875rem;
       font-weight: 600;
       color: var(--accent);
       background: var(--accent-soft);
-      padding: 4px 12px;
+      padding: 6px 12px;
       border-radius: 999px;
       white-space: nowrap;
+    }
+
+    .add-recipe-btn {
+      background: var(--accent);
+      color: #FFFFFF;
+      border: none;
+      border-radius: 999px;
+      padding: 7px 14px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s ease;
+    }
+
+    .add-recipe-btn:hover {
+      background: var(--accent-hover);
+    }
+
+    .add-recipe-form {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow-y: auto;
+      padding-right: 2px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    @media (min-width: 520px) {
+      .form-row {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .form-label {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .form-input,
+    .form-textarea {
+      width: 100%;
+      padding: 10px 12px;
+      font-family: inherit;
+      font-size: 16px; /* prevents iOS zoom */
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      background: #FFFDFB;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .form-textarea {
+      min-height: 92px;
+      resize: vertical;
+      line-height: 1.45;
+    }
+
+    .form-input:focus,
+    .form-textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(196, 82, 51, 0.12);
+    }
+
+    .delete-recipe-btn {
+      background: var(--surface);
+      border: 1.5px solid #E5B9AE;
+      color: #A83B3B;
+      font-size: 0.88rem;
+      font-weight: 600;
+      padding: 8px 14px;
+      border-radius: 999px;
+      cursor: pointer;
     }
 
     /* Search */
@@ -801,7 +896,10 @@
     <div id="listView" class="list-view">
       <header class="app-header">
         <h1 class="app-title">Family Recipes</h1>
-        <span id="recipeCount" class="recipe-count"></span>
+        <div class="header-actions">
+          <span id="recipeCount" class="recipe-count"></span>
+          <button id="addRecipeBtn" class="add-recipe-btn" type="button">+ Recipe</button>
+        </div>
       </header>
 
       <div class="search-wrap">
@@ -848,10 +946,58 @@
       </div>
     </div>
 
+    <!-- ADD RECIPE MODAL -->
+    <div id="addRecipeModal" class="modal-backdrop" role="dialog" aria-modal="true">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2 class="modal-title">Add New Recipe</h2>
+          <button id="closeAddRecipeBtn" class="modal-close" aria-label="Close">&times;</button>
+        </div>
+        <form id="addRecipeForm" class="add-recipe-form">
+          <div class="form-group">
+            <label class="form-label" for="newTitle">Recipe Title *</label>
+            <input id="newTitle" class="form-input" type="text" required placeholder="e.g. Baked Ziti" />
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="newCategory">Category</label>
+              <input id="newCategory" class="form-input" type="text" list="categoryOptions" placeholder="e.g. Pasta, Soup, Tex-Mex" />
+              <datalist id="categoryOptions"></datalist>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="newProtein">Main Protein / Type</label>
+              <input id="newProtein" class="form-input" type="text" placeholder="e.g. Chicken, Ground Beef" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="newMethod">Cooking Method</label>
+            <input id="newMethod" class="form-input" type="text" placeholder="e.g. Skillet, Slow Cooker, Baked" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="newIngredients">Ingredients (1 per line) *</label>
+            <textarea id="newIngredients" class="form-textarea" required placeholder="1 lb ground beef&#10;1 jar marinara sauce&#10;16 oz pasta"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="newSteps">Instructions (1 step per line) *</label>
+            <textarea id="newSteps" class="form-textarea" required placeholder="Brown the beef in a skillet.&#10;Stir in marinara and simmer 10 minutes."></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="newNotes">Notes (optional)</label>
+            <textarea id="newNotes" class="form-textarea" style="min-height: 68px" placeholder="Serving size, tips, or tweaks..."></textarea>
+          </div>
+          <div class="modal-actions">
+            <button type="button" id="cancelAddRecipeBtn" class="btn-secondary">Cancel</button>
+            <button type="submit" class="btn-primary">Save Recipe</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <!-- DETAIL VIEW -->
     <div id="detailView" class="detail-view">
       <div class="detail-nav">
         <button id="backBtn" class="back-btn">&larr; All Recipes</button>
+        <button id="deleteRecipeBtn" class="delete-recipe-btn" type="button" style="display: none">Delete Recipe</button>
       </div>
       <div id="detailContent"></div>
     </div>
@@ -1468,12 +1614,41 @@
       return dt.toLocaleDateString(undefined, { month: "short", day: "numeric" });
     }
 
+    const CUSTOM_RECIPES_KEY = "recipe-custom-list";
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function getCustomRecipes() {
+      try {
+        const raw = localStorage.getItem(CUSTOM_RECIPES_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveCustomRecipes(list) {
+      localStorage.setItem(CUSTOM_RECIPES_KEY, JSON.stringify(list));
+    }
+
+    function getAllRecipes() {
+      return [...RECIPES, ...getCustomRecipes()];
+    }
+
     function countIngredients(list) {
       return list.filter(i => typeof i === "string").length;
     }
 
     function renderFilters() {
-      const categories = ["All", ...new Set(RECIPES.map(r => r.category))];
+      const categories = ["All", ...new Set(getAllRecipes().map(r => r.category))];
       filterBar.innerHTML = "";
       categories.forEach(cat => {
         const btn = document.createElement("button");
@@ -1509,7 +1684,7 @@
 
     function getFilteredRecipes() {
       const q = searchQuery.trim().toLowerCase();
-      const list = RECIPES.filter(r => {
+      const list = getAllRecipes().filter(r => {
         const matchesCat = activeCategory === "All" || r.category === activeCategory;
         if (!matchesCat) return false;
         if (!q) return true;
@@ -1642,7 +1817,7 @@
     function buildCombinedGroceryList() {
       const selected = getSelectedGroceryIds();
       const map = new Map();
-      RECIPES.filter(r => selected.has(r.id)).forEach(recipe => {
+      getAllRecipes().filter(r => selected.has(r.id)).forEach(recipe => {
         recipe.ingredients.forEach(item => {
           if (typeof item !== "string") return;
           const parsed = parseIngredientLine(item);
@@ -1741,9 +1916,15 @@
       updateGroceryBar();
     }
 
+    const deleteRecipeBtn = document.getElementById("deleteRecipeBtn");
+    let activeDetailRecipeId = null;
+
     function openRecipe(id, pushHash = true) {
-      const recipe = RECIPES.find(r => r.id === id);
+      const recipe = getAllRecipes().find(r => r.id === id);
       if (!recipe) return;
+
+      activeDetailRecipeId = recipe.id;
+      deleteRecipeBtn.style.display = recipe.isCustom ? "inline-block" : "none";
 
       if (pushHash) {
         history.pushState({ recipeId: id }, "", `#${id}`);
@@ -1751,12 +1932,12 @@
 
       const ingredientsHtml = recipe.ingredients.map(item => {
         if (typeof item === "object" && item.group) {
-          return `<li class="ingredient-group">${item.group}</li>`;
+          return `<li class="ingredient-group">${escapeHtml(item.group)}</li>`;
         }
         return `
           <li class="ingredient-item">
             <input type="checkbox" />
-            <span>${item}</span>
+            <span>${escapeHtml(item)}</span>
           </li>
         `;
       }).join("");
@@ -1764,22 +1945,22 @@
       const stepsHtml = recipe.steps.map((step, idx) => `
         <li class="step-item">
           <span class="step-num">${idx + 1}</span>
-          <span>${step}</span>
+          <span>${escapeHtml(step)}</span>
         </li>
       `).join("");
 
       const storageKey = `recipe-notes-${recipe.id}`;
       const savedNote = localStorage.getItem(storageKey) || "";
-      const tipHtml = recipe.note ? `<div class="note-box">${recipe.note}</div>` : "";
+      const tipHtml = recipe.note ? `<div class="note-box">${escapeHtml(recipe.note)}</div>` : "";
       const lastCooked = getLastCooked(recipe.id);
 
       detailContent.innerHTML = `
         <div class="detail-hero" style="--detail-accent: ${recipe.accent || '#C45233'}">
-          <div class="card-category" style="color: ${recipe.accent || '#C45233'}">${recipe.category}</div>
-          <h1 class="detail-title">${recipe.title}</h1>
+          <div class="card-category" style="color: ${recipe.accent || '#C45233'}">${escapeHtml(recipe.category)}</div>
+          <h1 class="detail-title">${escapeHtml(recipe.title)}</h1>
           <div class="card-meta">
-            <span class="meta-tag">${recipe.protein}</span>
-            <span class="meta-tag">${recipe.method}</span>
+            <span class="meta-tag">${escapeHtml(recipe.protein)}</span>
+            <span class="meta-tag">${escapeHtml(recipe.method)}</span>
           </div>
           <div class="last-cooked-row">
             <label class="last-cooked-toggle">
@@ -1899,9 +2080,25 @@
 
     backBtn.addEventListener("click", () => showList(true));
 
+    deleteRecipeBtn.addEventListener("click", () => {
+      if (!activeDetailRecipeId) return;
+      if (!confirm("Delete this custom recipe?")) return;
+      const updated = getCustomRecipes().filter(r => r.id !== activeDetailRecipeId);
+      saveCustomRecipes(updated);
+      localStorage.removeItem(`recipe-notes-${activeDetailRecipeId}`);
+      localStorage.removeItem(`recipe-last-cooked-${activeDetailRecipeId}`);
+      const selected = getSelectedGroceryIds();
+      if (selected.delete(activeDetailRecipeId)) {
+        saveSelectedGroceryIds(selected);
+      }
+      activeDetailRecipeId = null;
+      renderFilters();
+      showList(true);
+    });
+
     window.addEventListener("popstate", () => {
       const hashId = location.hash.replace(/^#/, "");
-      if (hashId && RECIPES.some(r => r.id === hashId)) {
+      if (hashId && getAllRecipes().some(r => r.id === hashId)) {
         openRecipe(hashId, false);
       } else {
         showList(false);
@@ -1974,13 +2171,88 @@
       window.location.href = "shortcuts://run-shortcut?name=Add%20Groceries";
     });
 
+    const addRecipeModal = document.getElementById("addRecipeModal");
+    const addRecipeForm = document.getElementById("addRecipeForm");
+    const categoryOptions = document.getElementById("categoryOptions");
+
+    function openAddRecipeModal() {
+      const cats = [...new Set(getAllRecipes().map(r => r.category).filter(Boolean))];
+      categoryOptions.innerHTML = cats.map(c => `<option value="${escapeHtml(c)}"></option>`).join("");
+      addRecipeModal.classList.add("visible");
+      document.getElementById("newTitle").focus();
+    }
+
+    function closeAddRecipeModal() {
+      addRecipeModal.classList.remove("visible");
+    }
+
+    document.getElementById("addRecipeBtn").addEventListener("click", openAddRecipeModal);
+    document.getElementById("closeAddRecipeBtn").addEventListener("click", closeAddRecipeModal);
+    document.getElementById("cancelAddRecipeBtn").addEventListener("click", closeAddRecipeModal);
+
+    addRecipeModal.addEventListener("click", (e) => {
+      if (e.target === addRecipeModal) closeAddRecipeModal();
+    });
+
+    addRecipeForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const title = document.getElementById("newTitle").value.trim();
+      const category = document.getElementById("newCategory").value.trim() || "Other";
+      const protein = document.getElementById("newProtein").value.trim() || "Homemade";
+      const method = document.getElementById("newMethod").value.trim() || "Custom";
+      const ingredients = document.getElementById("newIngredients").value
+        .split(/\r?\n/)
+        .map(line => line.replace(/^[-•*]\s*/, "").trim())
+        .filter(Boolean);
+      const steps = document.getElementById("newSteps").value
+        .split(/\r?\n/)
+        .map(line => line.replace(/^\d+[.)]\s*/, "").trim())
+        .filter(Boolean);
+      const noteText = document.getElementById("newNotes").value.trim();
+
+      if (!title || ingredients.length === 0 || steps.length === 0) return;
+
+      let baseId = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "recipe";
+      let id = baseId;
+      if (getAllRecipes().some(r => r.id === id)) {
+        id = `${baseId}-${Date.now().toString(36)}`;
+      }
+
+      const newRecipe = {
+        id,
+        title,
+        category,
+        protein,
+        method,
+        dateAdded: new Date().toISOString(),
+        accent: "#C45233",
+        isCustom: true,
+        ingredients,
+        steps,
+        ...(noteText ? { note: noteText } : {})
+      };
+
+      const customList = getCustomRecipes();
+      customList.push(newRecipe);
+      saveCustomRecipes(customList);
+      if (noteText) {
+        localStorage.setItem(`recipe-notes-${id}`, noteText);
+      }
+
+      addRecipeForm.reset();
+      closeAddRecipeModal();
+      activeCategory = "All";
+      renderFilters();
+      renderGrid();
+    });
+
     renderFilters();
     renderSortBar();
     renderGrid();
 
     if (location.hash) {
       const initialId = location.hash.replace(/^#/, "");
-      if (RECIPES.some(r => r.id === initialId)) {
+      if (getAllRecipes().some(r => r.id === initialId)) {
         openRecipe(initialId, false);
       }
     }
