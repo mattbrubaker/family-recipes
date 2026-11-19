@@ -841,8 +841,9 @@
         <p class="modal-note">Duplicate ingredients are combined automatically. Copy and paste into your Google Keep Grocery list.</p>
         <ul id="groceryModalList" class="grocery-items-list"></ul>
         <div class="modal-actions">
-          <button id="copyGroceryBtn" class="btn-primary">Copy for Google Keep</button>
-          <a href="https://keep.google.com/" target="_blank" rel="noopener" class="btn-secondary">Open Google Keep</a>
+          <button id="remindersBtn" class="btn-primary">Send to Apple Reminders</button>
+          <button id="copyGroceryBtn" class="btn-secondary">Copy for Google Keep</button>
+          <a href="https://keep.google.com/" target="_blank" rel="noopener" class="btn-secondary">Open Keep</a>
         </div>
       </div>
     </div>
@@ -1924,6 +1925,7 @@
     const groceryModal = document.getElementById("groceryModal");
     const groceryModalList = document.getElementById("groceryModalList");
     const copyGroceryBtn = document.getElementById("copyGroceryBtn");
+    const remindersBtn = document.getElementById("remindersBtn");
 
     document.getElementById("openGroceryBtn").addEventListener("click", () => {
       const items = buildCombinedGroceryList();
@@ -1934,6 +1936,7 @@
         </li>
       `).join("");
       copyGroceryBtn.textContent = "Copy for Google Keep";
+      remindersBtn.textContent = "Send to Apple Reminders";
       groceryModal.classList.add("visible");
     });
 
@@ -1950,15 +1953,25 @@
       renderGrid();
     });
 
-    copyGroceryBtn.addEventListener("click", async () => {
+    function getGroceryPlainText() {
       const items = buildCombinedGroceryList();
-      const text = items.map(i => i.qtyText ? `${i.name} (${i.qtyText})` : i.name).join("\n");
+      return items.map(i => i.qtyText ? `${i.name} (${i.qtyText})` : i.name).join("\n");
+    }
+
+    copyGroceryBtn.addEventListener("click", async () => {
       try {
-        await navigator.clipboard.writeText(text);
+        await navigator.clipboard.writeText(getGroceryPlainText());
         copyGroceryBtn.textContent = "Copied! Paste into Keep";
       } catch {
         copyGroceryBtn.textContent = "Select & Copy manually";
       }
+    });
+
+    remindersBtn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(getGroceryPlainText());
+      } catch {}
+      window.location.href = "shortcuts://run-shortcut?name=Add%20Groceries";
     });
 
     renderFilters();
