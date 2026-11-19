@@ -296,6 +296,224 @@
       background: #EAF3EC;
     }
 
+    .card-grocery-row {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding-top: 12px;
+      margin-top: 2px;
+      border-top: 1px solid #F2ECE4;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .card-grocery-row input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      margin: 0;
+      accent-color: var(--accent);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .recipe-card.selected {
+      border-color: var(--accent);
+      background: #FFFDFB;
+    }
+
+    /* Floating Grocery Bar */
+    .grocery-bar {
+      position: fixed;
+      left: 16px;
+      right: 16px;
+      bottom: max(16px, env(safe-area-inset-bottom));
+      max-width: 928px;
+      margin: 0 auto;
+      background: var(--text);
+      color: #FFFFFF;
+      border-radius: 16px;
+      padding: 12px 16px;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      box-shadow: 0 10px 28px rgba(31, 27, 24, 0.28);
+      z-index: 40;
+    }
+
+    .grocery-bar.visible {
+      display: flex;
+    }
+
+    .grocery-bar-info {
+      font-size: 0.92rem;
+      font-weight: 600;
+    }
+
+    .grocery-bar-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .grocery-clear-btn {
+      background: rgba(255, 255, 255, 0.14);
+      color: #FFFFFF;
+      border: none;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .grocery-view-btn {
+      background: var(--accent);
+      color: #FFFFFF;
+      border: none;
+      border-radius: 999px;
+      padding: 9px 16px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    /* Grocery Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(31, 27, 24, 0.48);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      z-index: 60;
+      padding: 16px;
+    }
+
+    .modal-backdrop.visible {
+      display: flex;
+    }
+
+    @media (min-width: 640px) {
+      .modal-backdrop {
+        align-items: center;
+      }
+    }
+
+    .modal-card {
+      background: var(--surface);
+      width: 100%;
+      max-width: 560px;
+      max-height: 85vh;
+      border-radius: 20px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .modal-title {
+      font-family: Georgia, "New York", serif;
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin: 0;
+    }
+
+    .modal-close {
+      background: var(--surface-subtle);
+      border: none;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-size: 1.2rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-note {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin: 0;
+    }
+
+    .grocery-items-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      overflow-y: auto;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .grocery-items-list li {
+      padding: 10px 4px;
+      border-bottom: 1px solid #F2ECE4;
+      font-size: 0.96rem;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .grocery-items-list li:last-child {
+      border-bottom: none;
+    }
+
+    .grocery-qty {
+      color: var(--accent);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      flex: 1;
+      background: var(--accent);
+      color: #FFFFFF;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+      text-decoration: none;
+    }
+
+    .btn-secondary {
+      flex: 1;
+      background: var(--surface-subtle);
+      color: var(--text);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      text-decoration: none;
+    }
+
     .empty-state {
       text-align: center;
       padding: 48px 16px;
@@ -602,6 +820,31 @@
       <div id="sortBar" class="sort-bar"></div>
       <div id="recipeGrid" class="recipe-grid"></div>
       <div id="emptyState" class="empty-state">No recipes match that search.</div>
+    </div>
+
+    <!-- FLOATING GROCERY BAR -->
+    <div id="groceryBar" class="grocery-bar">
+      <span id="groceryBarInfo" class="grocery-bar-info"></span>
+      <div class="grocery-bar-actions">
+        <button id="clearGroceryBtn" class="grocery-clear-btn">Clear</button>
+        <button id="openGroceryBtn" class="grocery-view-btn">Grocery List</button>
+      </div>
+    </div>
+
+    <!-- GROCERY LIST MODAL -->
+    <div id="groceryModal" class="modal-backdrop" role="dialog" aria-modal="true">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2 class="modal-title">Combined Grocery List</h2>
+          <button id="closeGroceryBtn" class="modal-close" aria-label="Close">&times;</button>
+        </div>
+        <p class="modal-note">Duplicate ingredients are combined automatically. Copy and paste into your Google Keep Grocery list.</p>
+        <ul id="groceryModalList" class="grocery-items-list"></ul>
+        <div class="modal-actions">
+          <button id="copyGroceryBtn" class="btn-primary">Copy for Google Keep</button>
+          <a href="https://keep.google.com/" target="_blank" rel="noopener" class="btn-secondary">Open Google Keep</a>
+        </div>
+      </div>
     </div>
 
     <!-- DETAIL VIEW -->
@@ -1292,19 +1535,170 @@
       });
     }
 
+    function getSelectedGroceryIds() {
+      try {
+        return new Set(JSON.parse(localStorage.getItem("recipe-grocery-selected") || "[]"));
+      } catch {
+        return new Set();
+      }
+    }
+
+    function saveSelectedGroceryIds(set) {
+      localStorage.setItem("recipe-grocery-selected", JSON.stringify([...set]));
+    }
+
+    function parseFraction(str) {
+      if (!str) return null;
+      const s = str.trim();
+      if (/^\d+\s+\d+\/\d+$/.test(s)) {
+        const [whole, frac] = s.split(/\s+/);
+        const [n, d] = frac.split("/").map(Number);
+        return Number(whole) + n / d;
+      }
+      if (/^\d+\/\d+$/.test(s)) {
+        const [n, d] = s.split("/").map(Number);
+        return n / d;
+      }
+      const num = Number(s);
+      return Number.isFinite(num) ? num : null;
+    }
+
+    function formatQty(num) {
+      if (num == null) return "";
+      const rounded = Math.round(num * 100) / 100;
+      return Number.isInteger(rounded) ? String(rounded) : String(rounded);
+    }
+
+    function normalizeUnit(u) {
+      if (!u) return "";
+      const low = u.toLowerCase().replace(/\.$/, "");
+      const map = {
+        lbs: "lb", lb: "lb", pound: "lb", pounds: "lb",
+        oz: "oz", ounce: "oz", ounces: "oz",
+        cups: "cup", cup: "cup", c: "cup",
+        tbsp: "tbsp", tablespoon: "tbsp", tablespoons: "tbsp",
+        tsp: "tsp", teaspoon: "tsp", teaspoons: "tsp",
+        cans: "can", can: "can",
+        cloves: "clove", clove: "clove",
+        slices: "slice", slice: "slice",
+        pkgs: "pkg", pkg: "pkg", package: "pkg", packages: "pkg",
+        packets: "packet", packet: "packet",
+        stalks: "stalk", stalk: "stalk",
+        heads: "head", head: "head",
+        jars: "jar", jar: "jar",
+        bags: "bag", bag: "bag",
+        quarts: "quart", quart: "quart",
+        pints: "pint", pint: "pint"
+      };
+      return map[low] || low;
+    }
+
+    function normalizeName(raw) {
+      let s = raw
+        .replace(/\([^)]*\)/g, "")
+        .replace(/,.*$/, "")
+        .replace(/^(optional|toppings|garnish):\s*/i, "")
+        .trim()
+        .toLowerCase();
+      if (s === "cloves garlic" || s === "garlic cloves") s = "garlic";
+      if (s === "chicken breast") s = "chicken breasts";
+      if (s === "yellow onion" || s === "medium onion" || s === "small onion" || s === "small yellow onion") s = "onion";
+      return s.replace(/\s+/g, " ");
+    }
+
+    function titleCase(str) {
+      return str.replace(/\b\w/g, c => c.toUpperCase());
+    }
+
+    function parseIngredientLine(line) {
+      let text = line.trim();
+      const isOptional = /^(optional|toppings|garnish):/i.test(text);
+      text = text.replace(/^(optional|toppings|garnish):\s*/i, "");
+
+      const qtyMatch = text.match(/^(\d+\s+\d+\/\d+|\d+\/\d+|\d+(?:\.\d+)?)(?:\s*[–-]\s*(\d+(?:\.\d+)?))?\s+(.*)$/);
+      if (!qtyMatch) {
+        return { key: normalizeName(text), display: text, qty: null, unit: "", isOptional };
+      }
+      const qty = parseFraction(qtyMatch[2] || qtyMatch[1]);
+      let rest = qtyMatch[3].trim();
+
+      const parenSizeMatch = rest.match(/^\([^)]+\)\s+(can|cans|jar|jars|bag|bags|pkg|pkgs)\s+(.*)$/i);
+      let unit = "";
+      if (parenSizeMatch) {
+        unit = normalizeUnit(parenSizeMatch[1]);
+        rest = parenSizeMatch[2];
+      } else {
+        const unitMatch = rest.match(/^(lbs?|pounds?|oz|ounces?|cups?|tbsp|tablespoons?|tsp|teaspoons?|cans?|cloves?|slices?|pkgs?|packages?|packets?|stalks?|heads?|jars?|bags?|quarts?|pints?)\b\s*(?:of\s+)?(.*)$/i);
+        if (unitMatch) {
+          unit = normalizeUnit(unitMatch[1]);
+          rest = unitMatch[2] || rest;
+        }
+      }
+      const key = normalizeName(rest) || normalizeName(text);
+      return { key, display: titleCase(key), qty, unit, isOptional };
+    }
+
+    function buildCombinedGroceryList() {
+      const selected = getSelectedGroceryIds();
+      const map = new Map();
+      RECIPES.filter(r => selected.has(r.id)).forEach(recipe => {
+        recipe.ingredients.forEach(item => {
+          if (typeof item !== "string") return;
+          const parsed = parseIngredientLine(item);
+          if (parsed.isOptional) return;
+          if (!map.has(parsed.key)) {
+            map.set(parsed.key, { name: parsed.display, unitTotals: new Map(), count: 0 });
+          }
+          const entry = map.get(parsed.key);
+          entry.count += 1;
+          if (parsed.qty != null) {
+            const u = parsed.unit || "count";
+            entry.unitTotals.set(u, (entry.unitTotals.get(u) || 0) + parsed.qty);
+          }
+        });
+      });
+
+      return [...map.values()].map(entry => {
+        if (entry.unitTotals.size === 0) {
+          return { name: entry.name, qtyText: entry.count > 1 ? `${entry.count}x` : "" };
+        }
+        const parts = [...entry.unitTotals.entries()].map(([u, total]) => {
+          const q = formatQty(total);
+          if (u === "count") return `${q} total`;
+          const unitLabel = total > 1 && !["oz", "tbsp", "tsp"].includes(u) ? `${u}s` : u;
+          return `${q} ${unitLabel} total`;
+        });
+        return { name: entry.name, qtyText: parts.join(" + ") };
+      });
+    }
+
+    function updateGroceryBar() {
+      const selected = getSelectedGroceryIds();
+      const bar = document.getElementById("groceryBar");
+      const info = document.getElementById("groceryBarInfo");
+      if (selected.size > 0) {
+        info.textContent = `${selected.size} ${selected.size === 1 ? "recipe" : "recipes"} selected`;
+        bar.classList.add("visible");
+      } else {
+        bar.classList.remove("visible");
+      }
+    }
+
     function renderGrid() {
       const filtered = getFilteredRecipes();
+      const selected = getSelectedGroceryIds();
       recipeCount.textContent = `${filtered.length} ${filtered.length === 1 ? "recipe" : "recipes"}`;
       recipeGrid.innerHTML = "";
       emptyState.style.display = filtered.length === 0 ? "block" : "none";
 
       filtered.forEach(recipe => {
         const lastCooked = getLastCooked(recipe.id);
+        const isSelected = selected.has(recipe.id);
         const cookedTag = lastCooked
           ? `<span class="meta-tag cooked">Cooked ${formatShortDate(lastCooked)}</span>`
           : `<span class="meta-tag">Not cooked yet</span>`;
         const card = document.createElement("article");
-        card.className = "recipe-card";
+        card.className = "recipe-card" + (isSelected ? " selected" : "");
         card.style.setProperty("--card-accent", recipe.accent || "#C45233");
         card.innerHTML = `
           <div class="card-top">
@@ -1320,10 +1714,30 @@
             <span class="meta-tag">${countIngredients(recipe.ingredients)} ingredients</span>
             ${cookedTag}
           </div>
+          <label class="card-grocery-row">
+            <input type="checkbox" class="grocery-check" ${isSelected ? "checked" : ""} />
+            <span>Add to Grocery List</span>
+          </label>
         `;
+        const groceryRow = card.querySelector(".card-grocery-row");
+        const groceryCb = card.querySelector(".grocery-check");
+        groceryRow.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (e.target !== groceryCb) groceryCb.checked = !groceryCb.checked;
+          const current = getSelectedGroceryIds();
+          if (groceryCb.checked) {
+            current.add(recipe.id);
+          } else {
+            current.delete(recipe.id);
+          }
+          saveSelectedGroceryIds(current);
+          card.classList.toggle("selected", groceryCb.checked);
+          updateGroceryBar();
+        });
         card.addEventListener("click", () => openRecipe(recipe.id));
         recipeGrid.appendChild(card);
       });
+      updateGroceryBar();
     }
 
     function openRecipe(id, pushHash = true) {
@@ -1505,6 +1919,46 @@
       clearSearch.classList.remove("visible");
       renderGrid();
       searchInput.focus();
+    });
+
+    const groceryModal = document.getElementById("groceryModal");
+    const groceryModalList = document.getElementById("groceryModalList");
+    const copyGroceryBtn = document.getElementById("copyGroceryBtn");
+
+    document.getElementById("openGroceryBtn").addEventListener("click", () => {
+      const items = buildCombinedGroceryList();
+      groceryModalList.innerHTML = items.map(item => `
+        <li>
+          <span>${item.name}</span>
+          ${item.qtyText ? `<span class="grocery-qty">${item.qtyText}</span>` : ""}
+        </li>
+      `).join("");
+      copyGroceryBtn.textContent = "Copy for Google Keep";
+      groceryModal.classList.add("visible");
+    });
+
+    document.getElementById("closeGroceryBtn").addEventListener("click", () => {
+      groceryModal.classList.remove("visible");
+    });
+
+    groceryModal.addEventListener("click", (e) => {
+      if (e.target === groceryModal) groceryModal.classList.remove("visible");
+    });
+
+    document.getElementById("clearGroceryBtn").addEventListener("click", () => {
+      saveSelectedGroceryIds(new Set());
+      renderGrid();
+    });
+
+    copyGroceryBtn.addEventListener("click", async () => {
+      const items = buildCombinedGroceryList();
+      const text = items.map(i => i.qtyText ? `${i.name} (${i.qtyText})` : i.name).join("\n");
+      try {
+        await navigator.clipboard.writeText(text);
+        copyGroceryBtn.textContent = "Copied! Paste into Keep";
+      } catch {
+        copyGroceryBtn.textContent = "Select & Copy manually";
+      }
     });
 
     renderFilters();
