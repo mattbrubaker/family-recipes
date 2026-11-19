@@ -163,6 +163,43 @@
       color: #FFFFFF;
     }
 
+    /* Sort Bar */
+    .sort-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .sort-label {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-right: 2px;
+    }
+
+    .sort-pill {
+      border: 1.5px solid var(--border);
+      background: var(--surface-subtle);
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 6px 13px;
+      border-radius: 999px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+
+    .sort-pill.active {
+      background: var(--text);
+      border-color: var(--text);
+      color: #FFFFFF;
+    }
+
     /* Card Grid */
     .recipe-grid {
       display: grid;
@@ -254,6 +291,11 @@
       border-radius: 8px;
     }
 
+    .meta-tag.cooked {
+      color: #3D6B47;
+      background: #EAF3EC;
+    }
+
     .empty-state {
       text-align: center;
       padding: 48px 16px;
@@ -329,6 +371,52 @@
       font-weight: 700;
       line-height: 1.2;
       margin: 6px 0 14px;
+    }
+
+    .last-cooked-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+    }
+
+    .last-cooked-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.98rem;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .last-cooked-toggle input[type="checkbox"] {
+      width: 22px;
+      height: 22px;
+      margin: 0;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .last-cooked-date {
+      font-family: inherit;
+      font-size: 16px; /* prevents iOS zoom */
+      font-weight: 500;
+      color: var(--text);
+      background: var(--surface-subtle);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 6px 10px;
+      outline: none;
+    }
+
+    .last-cooked-date:focus {
+      border-color: var(--accent);
     }
 
     .detail-section {
@@ -511,6 +599,7 @@
       </div>
 
       <div id="filterBar" class="filter-bar"></div>
+      <div id="sortBar" class="sort-bar"></div>
       <div id="recipeGrid" class="recipe-grid"></div>
       <div id="emptyState" class="empty-state">No recipes match that search.</div>
     </div>
@@ -532,6 +621,7 @@
         category: "Tex-Mex",
         protein: "Ground Beef",
         method: "Baked",
+        dateAdded: "2026-11-19T10:44:00",
         accent: "#C85A32",
         ingredients: [
           "1 pkg King's Hawaiian slider rolls (12-count)",
@@ -556,6 +646,7 @@
         category: "Pasta",
         protein: "Ground Beef",
         method: "One-Pot",
+        dateAdded: "2026-11-19T10:45:00",
         accent: "#B84A39",
         ingredients: [
           "1 lb ground beef",
@@ -584,6 +675,7 @@
         category: "Tex-Mex",
         protein: "Ground Beef",
         method: "Skillet",
+        dateAdded: "2026-11-19T10:46:00",
         accent: "#C85A32",
         ingredients: [
           { group: "Tacos" },
@@ -616,6 +708,7 @@
         category: "Pasta",
         protein: "Pepperoni",
         method: "Baked",
+        dateAdded: "2026-11-19T10:47:00",
         accent: "#A83B3B",
         ingredients: [
           "1 lb uncooked rotini",
@@ -643,6 +736,7 @@
         category: "Pasta",
         protein: "Italian Sausage",
         method: "Stovetop",
+        dateAdded: "2026-11-19T10:48:00",
         accent: "#5A7D5A",
         ingredients: [
           "1 lb mild Italian sausage (casing removed)",
@@ -675,6 +769,7 @@
         category: "Steak & Potatoes",
         protein: "Steak",
         method: "Air Fryer + Skillet",
+        dateAdded: "2026-11-19T10:49:00",
         accent: "#8A5A3B",
         ingredients: [
           { group: "Potatoes" },
@@ -709,6 +804,7 @@
         category: "Comfort Food",
         protein: "Chicken",
         method: "Skillet + Baked",
+        dateAdded: "2026-11-19T11:36:00",
         accent: "#B87333",
         ingredients: [
           "2 carrots, chopped",
@@ -731,10 +827,35 @@
           "Bake until the puff pastry is golden brown."
         ],
         note: "Exact measurements, seasonings, and bake temperature were not specified."
+      },
+      {
+        id: "mini-cranberry-margaritas",
+        title: "Mini Cranberry Margaritas",
+        category: "Drinks",
+        protein: "Tequila",
+        method: "Shaker / Pitcher",
+        dateAdded: "2026-11-19T11:54:00",
+        accent: "#9E2A47",
+        ingredients: [
+          "1 cup blanco tequila",
+          "3/4 cup orange liqueur (Cointreau or Triple Sec)",
+          "1 1/2 cups 100% cranberry juice",
+          "1/2 cup fresh lime juice",
+          "2–3 tbsp agave nectar (or simple syrup, to taste)",
+          "Ice",
+          "Garnish: coarse salt or sugar for rims, fresh cranberries, and lime wedges"
+        ],
+        steps: [
+          "Rim mini glasses or shot cups by rubbing a lime wedge around the edge and dipping into coarse salt or sugar.",
+          "Combine blanco tequila, orange liqueur, cranberry juice, fresh lime juice, and agave nectar in a cocktail shaker or pitcher with ice.",
+          "Shake vigorously (or stir well in a pitcher) for 15–20 seconds until chilled.",
+          "Strain into prepared mini glasses over fresh ice and garnish with fresh cranberries and a small lime wedge."
+        ]
       }
     ];
 
     let activeCategory = "All";
+    let activeSort = "date-added";
     let searchQuery = "";
 
     const listView = document.getElementById("listView");
@@ -742,11 +863,40 @@
     const detailContent = document.getElementById("detailContent");
     const recipeGrid = document.getElementById("recipeGrid");
     const filterBar = document.getElementById("filterBar");
+    const sortBar = document.getElementById("sortBar");
     const searchInput = document.getElementById("searchInput");
     const clearSearch = document.getElementById("clearSearch");
     const recipeCount = document.getElementById("recipeCount");
     const emptyState = document.getElementById("emptyState");
     const backBtn = document.getElementById("backBtn");
+
+    function getTodayISO() {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, "0");
+      const d = String(now.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    }
+
+    function getLastCooked(id) {
+      return localStorage.getItem(`recipe-last-cooked-${id}`) || "";
+    }
+
+    function setLastCooked(id, dateStr) {
+      const key = `recipe-last-cooked-${id}`;
+      if (dateStr) {
+        localStorage.setItem(key, dateStr);
+      } else {
+        localStorage.removeItem(key);
+      }
+    }
+
+    function formatShortDate(dateStr) {
+      if (!dateStr) return "";
+      const [y, m, d] = dateStr.split("-").map(Number);
+      const dt = new Date(y, m - 1, d);
+      return dt.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    }
 
     function countIngredients(list) {
       return list.filter(i => typeof i === "string").length;
@@ -768,9 +918,28 @@
       });
     }
 
+    function renderSortBar() {
+      const options = [
+        { id: "date-added", label: "Date Added (Newest)" },
+        { id: "last-cooked", label: "Last Cooked (Oldest)" }
+      ];
+      sortBar.innerHTML = '<span class="sort-label">Sort:</span>';
+      options.forEach(opt => {
+        const btn = document.createElement("button");
+        btn.className = "sort-pill" + (opt.id === activeSort ? " active" : "");
+        btn.textContent = opt.label;
+        btn.addEventListener("click", () => {
+          activeSort = opt.id;
+          renderSortBar();
+          renderGrid();
+        });
+        sortBar.appendChild(btn);
+      });
+    }
+
     function getFilteredRecipes() {
       const q = searchQuery.trim().toLowerCase();
-      return RECIPES.filter(r => {
+      const list = RECIPES.filter(r => {
         const matchesCat = activeCategory === "All" || r.category === activeCategory;
         if (!matchesCat) return false;
         if (!q) return true;
@@ -783,6 +952,18 @@
         ].join(" ").toLowerCase();
         return haystack.includes(q);
       });
+
+      return list.sort((a, b) => {
+        if (activeSort === "last-cooked") {
+          const aCooked = getLastCooked(a.id);
+          const bCooked = getLastCooked(b.id);
+          if (!aCooked && !bCooked) return (b.dateAdded || "").localeCompare(a.dateAdded || "");
+          if (!aCooked) return -1;
+          if (!bCooked) return 1;
+          if (aCooked !== bCooked) return aCooked.localeCompare(bCooked);
+        }
+        return (b.dateAdded || "").localeCompare(a.dateAdded || "");
+      });
     }
 
     function renderGrid() {
@@ -792,6 +973,10 @@
       emptyState.style.display = filtered.length === 0 ? "block" : "none";
 
       filtered.forEach(recipe => {
+        const lastCooked = getLastCooked(recipe.id);
+        const cookedTag = lastCooked
+          ? `<span class="meta-tag cooked">Cooked ${formatShortDate(lastCooked)}</span>`
+          : `<span class="meta-tag">Not cooked yet</span>`;
         const card = document.createElement("article");
         card.className = "recipe-card";
         card.style.setProperty("--card-accent", recipe.accent || "#C45233");
@@ -807,6 +992,7 @@
             <span class="meta-tag">${recipe.protein}</span>
             <span class="meta-tag">${recipe.method}</span>
             <span class="meta-tag">${countIngredients(recipe.ingredients)} ingredients</span>
+            ${cookedTag}
           </div>
         `;
         card.addEventListener("click", () => openRecipe(recipe.id));
@@ -844,6 +1030,7 @@
       const storageKey = `recipe-notes-${recipe.id}`;
       const savedNote = localStorage.getItem(storageKey) || "";
       const tipHtml = recipe.note ? `<div class="note-box">${recipe.note}</div>` : "";
+      const lastCooked = getLastCooked(recipe.id);
 
       detailContent.innerHTML = `
         <div class="detail-hero" style="--detail-accent: ${recipe.accent || '#C45233'}">
@@ -852,6 +1039,19 @@
           <div class="card-meta">
             <span class="meta-tag">${recipe.protein}</span>
             <span class="meta-tag">${recipe.method}</span>
+          </div>
+          <div class="last-cooked-row">
+            <label class="last-cooked-toggle">
+              <input type="checkbox" id="lastCookedCheck" ${lastCooked ? "checked" : ""} />
+              <span>Last Cooked</span>
+            </label>
+            <input
+              type="date"
+              id="lastCookedDate"
+              class="last-cooked-date"
+              value="${lastCooked}"
+              style="display: ${lastCooked ? "inline-block" : "none"}"
+            />
           </div>
         </div>
 
@@ -914,6 +1114,33 @@
         });
       });
 
+      const lastCookedCheck = document.getElementById("lastCookedCheck");
+      const lastCookedDate = document.getElementById("lastCookedDate");
+
+      lastCookedCheck.addEventListener("change", () => {
+        if (lastCookedCheck.checked) {
+          const dateVal = lastCookedDate.value || getTodayISO();
+          lastCookedDate.value = dateVal;
+          lastCookedDate.style.display = "inline-block";
+          setLastCooked(recipe.id, dateVal);
+        } else {
+          lastCookedDate.value = "";
+          lastCookedDate.style.display = "none";
+          setLastCooked(recipe.id, "");
+        }
+      });
+
+      lastCookedDate.addEventListener("change", () => {
+        if (lastCookedDate.value) {
+          lastCookedCheck.checked = true;
+          setLastCooked(recipe.id, lastCookedDate.value);
+        } else {
+          lastCookedCheck.checked = false;
+          lastCookedDate.style.display = "none";
+          setLastCooked(recipe.id, "");
+        }
+      });
+
       listView.classList.add("hidden");
       detailView.classList.add("active");
       window.scrollTo({ top: 0, behavior: "instant" });
@@ -925,6 +1152,7 @@
       }
       detailView.classList.remove("active");
       listView.classList.remove("hidden");
+      renderGrid();
       window.scrollTo({ top: 0, behavior: "instant" });
     }
 
@@ -954,6 +1182,7 @@
     });
 
     renderFilters();
+    renderSortBar();
     renderGrid();
 
     if (location.hash) {
