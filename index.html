@@ -2607,6 +2607,7 @@
         }
         localStorage.setItem(GITHUB_TOKEN_KEY, token);
         updateSyncUI();
+        syncFromGitHubOnLoad();
         syncTestStatus.textContent = "Connected! Ready to sync recipes.";
         syncTestStatus.className = "sync-status-msg ok";
       } catch (err) {
@@ -2702,7 +2703,7 @@
           showToast(`GitHub sync failed (${err.message}). Saved locally on this device.`, 5500);
         } finally {
           saveRecipeSubmitBtn.disabled = false;
-          saveRecipeSubmitBtn.textContent = "Save Recipe";
+          saveRecipeSubmitBtn.textContent = getGitHubToken() ? "Save to GitHub" : "Save Recipe";
         }
         return;
       }
@@ -2711,7 +2712,7 @@
       customList.push({ ...recipeForRepo, isCustom: true });
       saveCustomRecipes(customList);
       if (noteText) {
-        localStorage.setItem(`recipe-notes-${id}`, noteText);
+        setSavedNote(id, noteText);
       }
 
       addRecipeForm.reset();
@@ -2722,10 +2723,58 @@
       showToast("Saved locally on this device. Tap Sync to enable GitHub sync.");
     });
 
+    async function syncFromGitHubOnLoad() {
+      const token = getGitHubToken();
+      if (!token) return;
+      try {
+        const { fileData } = await fetchLatestRepoFile(token);
+        const liveHtml = base64ToUtf8(fileData.content);
+        let changed = false;
+
+        const recStart = liveHtml.indexOf("const RECIPES = [");
+        const recEnd = liveHtml.indexOf("// __RECIPE_INSERT_POINT__");
+        if (recStart !== -1 && recEnd !== -1 && recEnd > recStart) {
+          const arrayInner = liveHtml.slice(recStart + "const RECIPES = [".length, recEnd);
+          const liveRecipes = new Function(`return [${arrayInner}]`)();
+          const existingIds = new Set(RECIPES.map(r => r.id));
+          liveRecipes.forEach(r => {
+            if (r && r.id && !existingIds.has(r.id)) {
+              RECIPES.push(r);
+              existingIds.add(r.id);
+              changed = true;
+            }
+          });
+        }
+
+        const startMarker = "/* __RECIPE_META_START__ */";
+        const endMarker = "/* __RECIPE_META_END__ */";
+        const metaStart = liveHtml.indexOf(startMarker);
+        const metaEnd = liveHtml.indexOf(endMarker);
+        if (metaStart !== -1 && metaEnd !== -1 && metaEnd > metaStart) {
+          const liveMeta = JSON.parse(liveHtml.slice(metaStart + startMarker.length, metaEnd).trim());
+          Object.keys(liveMeta).forEach(id => {
+            RECIPE_META[id] = { ...(RECIPE_META[id] || {}), ...liveMeta[id] };
+            changed = true;
+          });
+        }
+
+        if (changed) {
+          renderFilters();
+          renderGrid();
+          if (detailView.classList.contains("active") && activeDetailRecipeId) {
+            openRecipe(activeDetailRecipeId, false);
+          }
+        }
+      } catch {
+        // Silent fallback to local cached page if offline
+      }
+    }
+
     updateSyncUI();
     renderFilters();
     renderSortBar();
     renderGrid();
+    syncFromGitHubOnLoad();
 
     if (location.hash) {
       const initialId = location.hash.replace(/^#/, "");
