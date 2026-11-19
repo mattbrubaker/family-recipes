@@ -2460,88 +2460,74 @@
       return json.split("\n").map(line => `      ${line}`).join("\n");
     }
 
-    async function commitRecipeToGitHub(recipe, token) {
+    async function fetchLatestRepoFile(token) {
       const apiUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_FILE}`;
       const headers = {
         "Authorization": `Bearer ${token}`,
         "Accept": "application/vnd.github+json"
       };
-
-      const getRes = await fetch(`${apiUrl}?ref=${GITHUB_BRANCH}`, { headers });
+      const getRes = await fetch(`${apiUrl}?ref=${GITHUB_BRANCH}&_=${Date.now()}`, {
+        headers,
+        cache: "no-store"
+      });
       if (!getRes.ok) {
         const errData = await getRes.json().catch(() => ({}));
         throw new Error(errData.message || `GitHub read failed (${getRes.status})`);
       }
-      const fileData = await getRes.json();
-      const currentHtml = base64ToUtf8(fileData.content);
-      const marker = "      // __RECIPE_INSERT_POINT__";
-      if (!currentHtml.includes(marker)) {
-        throw new Error("Could not find recipe insertion point in index.html");
-      }
+      return { apiUrl, headers, fileData: await getRes.json() };
+    }
 
-      const recipeBlock = formatRecipeForSource(recipe);
-      const updatedHtml = currentHtml.replace(marker, `,\n${recipeBlock}\n${marker}`);
-      const finalHtml = updatedHtml.replace("\n,\n" + recipeBlock, ",\n" + recipeBlock);
+    async function commitWithRetry(token, commitMessage, transformHtml) {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const { apiUrl, headers, fileData } = await fetchLatestRepoFile(token);
+        const currentHtml = base64ToUtf8(fileData.content);
+        const updatedHtml = transformHtml(currentHtml);
 
-      const putRes = await fetch(apiUrl, {
-        method: "PUT",
-        headers: { ...headers, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: `Add recipe: ${recipe.title}`,
-          content: utf8ToBase64(finalHtml),
-          sha: fileData.sha,
-          branch: GITHUB_BRANCH
-        })
-      });
+        const putRes = await fetch(apiUrl, {
+          method: "PUT",
+          headers: { ...headers, "Content-Type": "application/json" },
+          cache: "no-store",
+          body: JSON.stringify({
+            message: commitMessage,
+            content: utf8ToBase64(updatedHtml),
+            sha: fileData.sha,
+            branch: GITHUB_BRANCH
+          })
+        });
 
-      if (!putRes.ok) {
+        if (putRes.ok) return;
+        if (putRes.status === 409 && attempt === 0) continue;
         const errData = await putRes.json().catch(() => ({}));
         throw new Error(errData.message || `GitHub commit failed (${putRes.status})`);
       }
     }
 
-    async function commitRecipeMetaToGitHub(recipeId, patch, commitMessage, token) {
-      const apiUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_FILE}`;
-      const headers = {
-        "Authorization": `Bearer ${token}`,
-        "Accept": "application/vnd.github+json"
-      };
-
-      const getRes = await fetch(`${apiUrl}?ref=${GITHUB_BRANCH}`, { headers });
-      if (!getRes.ok) {
-        const errData = await getRes.json().catch(() => ({}));
-        throw new Error(errData.message || `GitHub read failed (${getRes.status})`);
-      }
-      const fileData = await getRes.json();
-      const currentHtml = base64ToUtf8(fileData.content);
-      const startMarker = "/* __RECIPE_META_START__ */";
-      const endMarker = "/* __RECIPE_META_END__ */";
-      const startIdx = currentHtml.indexOf(startMarker);
-      const endIdx = currentHtml.indexOf(endMarker);
-      if (startIdx === -1 || endIdx === -1 || endIdx <= startIdx) {
-        throw new Error("Could not find recipe metadata block in index.html");
-      }
-
-      const jsonStart = startIdx + startMarker.length;
-      const meta = JSON.parse(currentHtml.slice(jsonStart, endIdx).trim());
-      meta[recipeId] = { ...(meta[recipeId] || {}), ...patch };
-      const updatedHtml = currentHtml.slice(0, jsonStart) + " " + JSON.stringify(meta, null, 2) + " " + currentHtml.slice(endIdx);
-
-      const putRes = await fetch(apiUrl, {
-        method: "PUT",
-        headers: { ...headers, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: commitMessage,
-          content: utf8ToBase64(updatedHtml),
-          sha: fileData.sha,
-          branch: GITHUB_BRANCH
-        })
+    async function commitRecipeToGitHub(recipe, token) {
+      await commitWithRetry(token, `Add recipe: ${recipe.title}`, (currentHtml) => {
+        const marker = "      // __RECIPE_INSERT_POINT__";
+        if (!currentHtml.includes(marker)) {
+          throw new Error("Could not find recipe insertion point in index.html");
+        }
+        const recipeBlock = formatRecipeForSource(recipe);
+        const updatedHtml = currentHtml.replace(marker, `,\n${recipeBlock}\n${marker}`);
+        return updatedHtml.replace("\n,\n" + recipeBlock, ",\n" + recipeBlock);
       });
+    }
 
-      if (!putRes.ok) {
-        const errData = await putRes.json().catch(() => ({}));
-        throw new Error(errData.message || `GitHub commit failed (${putRes.status})`);
-      }
+    async function commitRecipeMetaToGitHub(recipeId, patch, commitMessage, token) {
+      await commitWithRetry(token, commitMessage, (currentHtml) => {
+        const startMarker = "/* __RECIPE_META_START__ */";
+        const endMarker = "/* __RECIPE_META_END__ */";
+        const startIdx = currentHtml.indexOf(startMarker);
+        const endIdx = currentHtml.indexOf(endMarker);
+        if (startIdx === -1 || endIdx === -1 || endIdx <= startIdx) {
+          throw new Error("Could not find recipe metadata block in index.html");
+        }
+        const jsonStart = startIdx + startMarker.length;
+        const meta = JSON.parse(currentHtml.slice(jsonStart, endIdx).trim());
+        meta[recipeId] = { ...(meta[recipeId] || {}), ...patch };
+        return currentHtml.slice(0, jsonStart) + " " + JSON.stringify(meta, null, 2) + " " + currentHtml.slice(endIdx);
+      });
     }
 
     function openSyncModal() {
