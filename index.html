@@ -714,6 +714,44 @@
       flex-shrink: 0;
     }
 
+    .card-actions-footer {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding-top: 12px;
+      margin-top: 2px;
+      border-top: 1px solid #F2ECE4;
+    }
+
+    .card-actions-footer .card-grocery-row {
+      padding-top: 0;
+      margin-top: 0;
+      border-top: none;
+    }
+
+    .card-plan-row {
+      display: flex;
+      align-items: center;
+    }
+
+    .card-day-select {
+      width: 100%;
+      padding: 8px 10px;
+      font-family: inherit;
+      font-size: 16px; /* prevents iOS zoom */
+      font-weight: 600;
+      color: var(--text);
+      background: var(--surface-subtle);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .card-day-select:focus {
+      border-color: var(--accent);
+    }
+
     .recipe-card.selected {
       border-color: var(--accent);
       background: #FFFDFB;
@@ -2315,6 +2353,7 @@
       }
       setWeeklyPlan(plan);
       renderWeeklyPlanner();
+      renderGrid();
     }
 
     function renderWeeklyPlanner() {
@@ -2460,6 +2499,15 @@
           card.classList.remove("dragging");
           draggedRecipeId = null;
         });
+        const plan = getWeeklyPlan();
+        const allRecipes = getAllRecipes();
+        const dayOptionsHtml = WEEK_DAYS.map(day => {
+          const assignedId = plan[day];
+          const assignedRecipe = assignedId ? allRecipes.find(r => r.id === assignedId) : null;
+          const label = assignedRecipe ? `${day}: ${assignedRecipe.title}` : day;
+          return `<option value="${day}">${escapeHtml(label)}</option>`;
+        }).join("");
+
         card.innerHTML = `
           <div class="card-top">
             <div>
@@ -2474,10 +2522,18 @@
             <span class="meta-tag">${countIngredients(recipe.ingredients)} ingredients</span>
             ${cookedTag}
           </div>
-          <label class="card-grocery-row">
-            <input type="checkbox" class="grocery-check" ${isSelected ? "checked" : ""} />
-            <span>Add to Grocery List</span>
-          </label>
+          <div class="card-actions-footer">
+            <label class="card-grocery-row">
+              <input type="checkbox" class="grocery-check" ${isSelected ? "checked" : ""} />
+              <span>Add to Grocery List</span>
+            </label>
+            <div class="card-plan-row">
+              <select class="card-day-select" aria-label="Assign ${escapeHtml(recipe.title)} to a day">
+                <option value="">Assign to Day...</option>
+                ${dayOptionsHtml}
+              </select>
+            </div>
+          </div>
         `;
         const groceryRow = card.querySelector(".card-grocery-row");
         const groceryCb = card.querySelector(".grocery-check");
@@ -2493,6 +2549,15 @@
           saveSelectedGroceryIds(current);
           card.classList.toggle("selected", groceryCb.checked);
           updateGroceryBar();
+        });
+        const daySelect = card.querySelector(".card-day-select");
+        daySelect.addEventListener("click", (e) => e.stopPropagation());
+        daySelect.addEventListener("change", (e) => {
+          e.stopPropagation();
+          const chosenDay = daySelect.value;
+          if (!chosenDay) return;
+          assignRecipeToDay(chosenDay, recipe.id);
+          renderGrid();
         });
         card.addEventListener("click", () => openRecipe(recipe.id));
         recipeGrid.appendChild(card);
