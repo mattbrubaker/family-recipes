@@ -1338,6 +1338,10 @@
           <div class="grocery-sides-title">Add Sides</div>
           <div id="grocerySidesGrid" class="grocery-sides-grid"></div>
         </div>
+        <div class="grocery-sides-section">
+          <div class="grocery-sides-title">Don’t Forget The…</div>
+          <div id="groceryDontForgetGrid" class="grocery-sides-grid"></div>
+        </div>
         <div class="modal-actions">
           <button id="remindersBtn" class="btn-primary">Send to Apple Reminders</button>
           <button id="copyGroceryBtn" class="btn-secondary">Copy for Google Keep</button>
@@ -2506,6 +2510,15 @@
         }
       });
 
+      getSelectedDontForget().forEach(item => {
+        const key = item.toLowerCase();
+        if (!map.has(key)) {
+          map.set(key, { name: item, unitTotals: new Map(), count: 1 });
+        } else {
+          map.get(key).count += 1;
+        }
+      });
+
       return [...map.values()].map(entry => {
         if (entry.unitTotals.size === 0) {
           return { name: entry.name, qtyText: entry.count > 1 ? `${entry.count}x` : "" };
@@ -2932,6 +2945,14 @@
     ];
     const GROCERY_SIDES_KEY = "recipe-grocery-sides-selected";
 
+    const DONT_FORGET_ITEMS = [
+      "Milk",
+      "Fruit",
+      "Limes",
+      "Avocados"
+    ];
+    const GROCERY_FORGET_KEY = "recipe-grocery-forget-selected";
+
     function getSelectedSides() {
       try {
         return new Set(JSON.parse(localStorage.getItem(GROCERY_SIDES_KEY) || "[]"));
@@ -2944,6 +2965,18 @@
       localStorage.setItem(GROCERY_SIDES_KEY, JSON.stringify([...set]));
     }
 
+    function getSelectedDontForget() {
+      try {
+        return new Set(JSON.parse(localStorage.getItem(GROCERY_FORGET_KEY) || "[]"));
+      } catch {
+        return new Set();
+      }
+    }
+
+    function saveSelectedDontForget(set) {
+      localStorage.setItem(GROCERY_FORGET_KEY, JSON.stringify([...set]));
+    }
+
     function renderGroceryModalList() {
       const items = buildCombinedGroceryList(activeGroceryRecipeIds);
       groceryModalList.innerHTML = items.map(item => `
@@ -2954,27 +2987,27 @@
       `).join("");
     }
 
-    function renderGrocerySides() {
-      const grid = document.getElementById("grocerySidesGrid");
-      const selectedSides = getSelectedSides();
+    function renderChipSelector(gridId, itemsList, getSelectedFn, saveSelectedFn) {
+      const grid = document.getElementById(gridId);
+      const selected = getSelectedFn();
       grid.innerHTML = "";
-      SIDE_DISHES.forEach(side => {
-        const isChecked = selectedSides.has(side);
+      itemsList.forEach(item => {
+        const isChecked = selected.has(item);
         const label = document.createElement("label");
         label.className = "side-chip" + (isChecked ? " checked" : "");
         label.innerHTML = `
           <input type="checkbox" ${isChecked ? "checked" : ""} />
-          <span>${escapeHtml(side)}</span>
+          <span>${escapeHtml(item)}</span>
         `;
         const cb = label.querySelector("input");
         cb.addEventListener("change", () => {
-          const current = getSelectedSides();
+          const current = getSelectedFn();
           if (cb.checked) {
-            current.add(side);
+            current.add(item);
           } else {
-            current.delete(side);
+            current.delete(item);
           }
-          saveSelectedSides(current);
+          saveSelectedFn(current);
           label.classList.toggle("checked", cb.checked);
           renderGroceryModalList();
         });
@@ -2982,10 +3015,19 @@
       });
     }
 
+    function renderGrocerySides() {
+      renderChipSelector("grocerySidesGrid", SIDE_DISHES, getSelectedSides, saveSelectedSides);
+    }
+
+    function renderGroceryDontForget() {
+      renderChipSelector("groceryDontForgetGrid", DONT_FORGET_ITEMS, getSelectedDontForget, saveSelectedDontForget);
+    }
+
     function openGroceryModalWithIds(recipeIdsList = null) {
       activeGroceryRecipeIds = recipeIdsList;
       renderGroceryModalList();
       renderGrocerySides();
+      renderGroceryDontForget();
       copyGroceryBtn.textContent = "Copy for Google Keep";
       remindersBtn.textContent = "Send to Apple Reminders";
       groceryModal.classList.add("visible");
