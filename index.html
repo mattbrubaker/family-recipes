@@ -572,6 +572,18 @@
       border-bottom: 1px solid var(--border);
     }
 
+    .day-picker-group {
+      font-size: 0.76rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--accent);
+      background: var(--surface-subtle);
+      padding: 6px 8px;
+      margin-top: 4px;
+      border-radius: 8px;
+    }
+
     .day-picker-item {
       padding: 11px 6px;
       border-bottom: 1px solid #F2ECE4;
@@ -3096,13 +3108,22 @@
     function openDayPicker(day) {
       activePickerDay = day;
       dayPickerTitle.textContent = `Pick Recipe for ${day}`;
-      const all = getAllRecipes().slice().sort((a, b) => a.title.localeCompare(b.title));
-      dayPickerList.innerHTML = all.map(r => `
-        <li class="day-picker-item" data-id="${escapeHtml(r.id)}">
-          <span>${escapeHtml(r.title)}</span>
-          <span class="day-picker-meta">${escapeHtml(r.category)}</span>
-        </li>
-      `).join("");
+      const all = getAllRecipes().slice().sort((a, b) => {
+        const catCmp = (a.category || "Other").localeCompare(b.category || "Other");
+        return catCmp !== 0 ? catCmp : a.title.localeCompare(b.title);
+      });
+      let lastCat = "";
+      dayPickerList.innerHTML = all.map(r => {
+        const cat = r.category || "Other";
+        const header = cat !== lastCat ? `<li class="day-picker-group">${escapeHtml(cat)}</li>` : "";
+        lastCat = cat;
+        return `${header}
+          <li class="day-picker-item" data-id="${escapeHtml(r.id)}">
+            <span>${escapeHtml(r.title)}</span>
+            <span class="day-picker-meta">${escapeHtml(r.protein)}</span>
+          </li>
+        `;
+      }).join("");
       dayPickerList.querySelectorAll(".day-picker-item").forEach(li => {
         li.addEventListener("click", () => {
           if (activePickerDay) assignRecipeToDay(activePickerDay, li.dataset.id);
