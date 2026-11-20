@@ -913,6 +913,55 @@
       white-space: nowrap;
     }
 
+    .grocery-sides-section {
+      padding-top: 4px;
+    }
+
+    .grocery-sides-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .grocery-sides-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .side-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 11px;
+      border-radius: 999px;
+      border: 1.5px solid var(--border);
+      background: var(--surface-subtle);
+      color: var(--text);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.15s ease;
+    }
+
+    .side-chip input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      margin: 0;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .side-chip.checked {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
     .modal-actions {
       display: flex;
       gap: 10px;
@@ -1285,6 +1334,10 @@
         </div>
         <p class="modal-note">Duplicate ingredients are combined automatically. Copy and paste into your Google Keep Grocery list.</p>
         <ul id="groceryModalList" class="grocery-items-list"></ul>
+        <div class="grocery-sides-section">
+          <div class="grocery-sides-title">Add Sides</div>
+          <div id="grocerySidesGrid" class="grocery-sides-grid"></div>
+        </div>
         <div class="modal-actions">
           <button id="remindersBtn" class="btn-primary">Send to Apple Reminders</button>
           <button id="copyGroceryBtn" class="btn-secondary">Copy for Google Keep</button>
@@ -2444,6 +2497,15 @@
         });
       });
 
+      getSelectedSides().forEach(side => {
+        const key = side.toLowerCase();
+        if (!map.has(key)) {
+          map.set(key, { name: side, unitTotals: new Map(), count: 1 });
+        } else {
+          map.get(key).count += 1;
+        }
+      });
+
       return [...map.values()].map(entry => {
         if (entry.unitTotals.size === 0) {
           return { name: entry.name, qtyText: entry.count > 1 ? `${entry.count}x` : "" };
@@ -2859,15 +2921,71 @@
     const copyGroceryBtn = document.getElementById("copyGroceryBtn");
     const remindersBtn = document.getElementById("remindersBtn");
 
-    function openGroceryModalWithIds(recipeIdsList = null) {
-      activeGroceryRecipeIds = recipeIdsList;
-      const items = buildCombinedGroceryList(recipeIdsList);
+    const SIDE_DISHES = [
+      "Frozen French Fries",
+      "Frozen Tots",
+      "Green Beans",
+      "Potato Chips",
+      "Tortilla Chips",
+      "Fresh Fruit",
+      "Salad"
+    ];
+    const GROCERY_SIDES_KEY = "recipe-grocery-sides-selected";
+
+    function getSelectedSides() {
+      try {
+        return new Set(JSON.parse(localStorage.getItem(GROCERY_SIDES_KEY) || "[]"));
+      } catch {
+        return new Set();
+      }
+    }
+
+    function saveSelectedSides(set) {
+      localStorage.setItem(GROCERY_SIDES_KEY, JSON.stringify([...set]));
+    }
+
+    function renderGroceryModalList() {
+      const items = buildCombinedGroceryList(activeGroceryRecipeIds);
       groceryModalList.innerHTML = items.map(item => `
         <li>
-          <span>${item.name}</span>
-          ${item.qtyText ? `<span class="grocery-qty">${item.qtyText}</span>` : ""}
+          <span>${escapeHtml(item.name)}</span>
+          ${item.qtyText ? `<span class="grocery-qty">${escapeHtml(item.qtyText)}</span>` : ""}
         </li>
       `).join("");
+    }
+
+    function renderGrocerySides() {
+      const grid = document.getElementById("grocerySidesGrid");
+      const selectedSides = getSelectedSides();
+      grid.innerHTML = "";
+      SIDE_DISHES.forEach(side => {
+        const isChecked = selectedSides.has(side);
+        const label = document.createElement("label");
+        label.className = "side-chip" + (isChecked ? " checked" : "");
+        label.innerHTML = `
+          <input type="checkbox" ${isChecked ? "checked" : ""} />
+          <span>${escapeHtml(side)}</span>
+        `;
+        const cb = label.querySelector("input");
+        cb.addEventListener("change", () => {
+          const current = getSelectedSides();
+          if (cb.checked) {
+            current.add(side);
+          } else {
+            current.delete(side);
+          }
+          saveSelectedSides(current);
+          label.classList.toggle("checked", cb.checked);
+          renderGroceryModalList();
+        });
+        grid.appendChild(label);
+      });
+    }
+
+    function openGroceryModalWithIds(recipeIdsList = null) {
+      activeGroceryRecipeIds = recipeIdsList;
+      renderGroceryModalList();
+      renderGrocerySides();
       copyGroceryBtn.textContent = "Copy for Google Keep";
       remindersBtn.textContent = "Send to Apple Reminders";
       groceryModal.classList.add("visible");
