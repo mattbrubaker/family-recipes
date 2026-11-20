@@ -419,6 +419,182 @@
       color: #FFFFFF;
     }
 
+    /* Weekly Meal Planner */
+    .weekly-planner {
+      margin-bottom: 18px;
+    }
+
+    .weekly-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(104px, 1fr));
+      gap: 10px;
+      overflow-x: auto;
+      padding: 2px 2px 6px;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .weekly-grid::-webkit-scrollbar {
+      display: none;
+    }
+
+    .day-slot {
+      aspect-ratio: 1 / 1;
+      min-height: 104px;
+      background: var(--surface);
+      border: 1.5px dashed #D8CEC0;
+      border-radius: 14px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 6px;
+      position: relative;
+      cursor: pointer;
+      transition: border-color 0.15s ease, background 0.15s ease, transform 0.12s ease, box-shadow 0.15s ease;
+    }
+
+    .day-slot.filled {
+      border-style: solid;
+      border-color: var(--border);
+      border-top: 4px solid var(--slot-accent, var(--accent));
+      box-shadow: var(--shadow);
+    }
+
+    .day-slot.drag-over {
+      border-color: var(--accent);
+      border-style: solid;
+      background: var(--accent-soft);
+      transform: scale(1.02);
+    }
+
+    .day-slot-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+    }
+
+    .day-label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #9E948B;
+    }
+
+    .day-clear-btn {
+      background: var(--surface-subtle);
+      border: none;
+      color: var(--text-muted);
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      font-size: 0.85rem;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      flex-shrink: 0;
+    }
+
+    .day-empty-hint {
+      font-size: 0.76rem;
+      color: #B8AEA3;
+      line-height: 1.25;
+    }
+
+    .day-recipe-title {
+      font-family: Georgia, "New York", serif;
+      font-size: 0.86rem;
+      font-weight: 700;
+      line-height: 1.22;
+      color: var(--text);
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .weekly-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
+    .weekly-grocery-btn {
+      background: var(--accent);
+      color: #FFFFFF;
+      border: none;
+      border-radius: 10px;
+      padding: 9px 15px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .weekly-grocery-btn:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+
+    .weekly-clear-btn {
+      background: var(--surface-subtle);
+      color: var(--text-muted);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 7px 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .recipe-card[draggable="true"] {
+      cursor: grab;
+    }
+
+    .recipe-card.dragging {
+      opacity: 0.55;
+    }
+
+    .day-picker-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      overflow-y: auto;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .day-picker-item {
+      padding: 11px 6px;
+      border-bottom: 1px solid #F2ECE4;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 0.96rem;
+      font-weight: 600;
+    }
+
+    .day-picker-item:last-child {
+      border-bottom: none;
+    }
+
+    .day-picker-meta {
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
     /* Card Grid */
     .recipe-grid {
       display: grid;
@@ -1041,6 +1217,14 @@
 
       <div id="filterBar" class="filter-bar"></div>
       <div id="sortBar" class="sort-bar"></div>
+      <section class="weekly-planner" aria-label="Weekly meal plan">
+        <div id="weeklyGrid" class="weekly-grid"></div>
+        <div class="weekly-actions">
+          <button id="weeklyGroceryBtn" class="weekly-grocery-btn" type="button">Create Week's Grocery List</button>
+          <button id="syncWeekBtn" class="sync-inline-btn" type="button">Save to GitHub</button>
+          <button id="clearWeekBtn" class="weekly-clear-btn" type="button">Clear Week</button>
+        </div>
+      </section>
       <div id="recipeGrid" class="recipe-grid"></div>
       <div id="emptyState" class="empty-state">No recipes match that search.</div>
     </div>
@@ -1141,6 +1325,17 @@
           <button type="button" id="removeTokenBtn" class="btn-secondary">Remove Token</button>
           <button type="button" id="saveTokenBtn" class="btn-primary">Save &amp; Test</button>
         </div>
+      </div>
+    </div>
+
+    <!-- DAY PICKER MODAL (mobile/tap assignment) -->
+    <div id="dayPickerModal" class="modal-backdrop" role="dialog" aria-modal="true">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2 id="dayPickerTitle" class="modal-title">Assign Recipe</h2>
+          <button id="closeDayPickerBtn" class="modal-close" aria-label="Close">&times;</button>
+        </div>
+        <ul id="dayPickerList" class="day-picker-list"></ul>
       </div>
     </div>
 
@@ -2087,10 +2282,113 @@
       return { key, display: titleCase(key), qty, unit, isOptional };
     }
 
-    function buildCombinedGroceryList() {
-      const selected = getSelectedGroceryIds();
+    const WEEK_DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const WEEKLY_PLAN_KEY = "recipe-weekly-plan-v2";
+    let draggedRecipeId = null;
+    let activeGroceryRecipeIds = null;
+
+    function getWeeklyPlan() {
+      const meta = RECIPE_META.__weeklyPlan || {};
+      const metaTime = meta.updatedAt || 0;
+      try {
+        const raw = localStorage.getItem(WEEKLY_PLAN_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && parsed.days && (parsed.updatedAt || 0) >= metaTime) {
+            return parsed.days;
+          }
+        }
+      } catch {}
+      return meta.days || {};
+    }
+
+    function setWeeklyPlan(days, updatedAt = Date.now()) {
+      localStorage.setItem(WEEKLY_PLAN_KEY, JSON.stringify({ days, updatedAt }));
+    }
+
+    function assignRecipeToDay(day, recipeId) {
+      const plan = { ...getWeeklyPlan() };
+      if (recipeId) {
+        plan[day] = recipeId;
+      } else {
+        delete plan[day];
+      }
+      setWeeklyPlan(plan);
+      renderWeeklyPlanner();
+    }
+
+    function renderWeeklyPlanner() {
+      const weeklyGrid = document.getElementById("weeklyGrid");
+      const weeklyGroceryBtn = document.getElementById("weeklyGroceryBtn");
+      const plan = getWeeklyPlan();
+      const allRecipes = getAllRecipes();
+      weeklyGrid.innerHTML = "";
+      let filledCount = 0;
+
+      WEEK_DAYS.forEach(day => {
+        const recipeId = plan[day];
+        const recipe = recipeId ? allRecipes.find(r => r.id === recipeId) : null;
+        if (recipe) filledCount += 1;
+
+        const slot = document.createElement("div");
+        slot.className = "day-slot" + (recipe ? " filled" : "");
+        if (recipe) {
+          slot.style.setProperty("--slot-accent", recipe.accent || "#C45233");
+          slot.innerHTML = `
+            <div class="day-slot-head">
+              <span class="day-label">${day}</span>
+              <button type="button" class="day-clear-btn" aria-label="Remove ${day}">&times;</button>
+            </div>
+            <div class="day-recipe-title">${escapeHtml(recipe.title)}</div>
+          `;
+          slot.querySelector(".day-clear-btn").addEventListener("click", (e) => {
+            e.stopPropagation();
+            assignRecipeToDay(day, "");
+          });
+          slot.addEventListener("click", () => openRecipe(recipe.id));
+        } else {
+          slot.innerHTML = `
+            <div class="day-slot-head">
+              <span class="day-label">${day}</span>
+            </div>
+            <div class="day-empty-hint">Drop or tap</div>
+          `;
+          slot.addEventListener("click", () => openDayPicker(day));
+        }
+
+        slot.addEventListener("dragover", (e) => {
+          e.preventDefault();
+          if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+          slot.classList.add("drag-over");
+        });
+
+        slot.addEventListener("dragleave", () => {
+          slot.classList.remove("drag-over");
+        });
+
+        slot.addEventListener("drop", (e) => {
+          e.preventDefault();
+          slot.classList.remove("drag-over");
+          const droppedId = (e.dataTransfer && e.dataTransfer.getData("text/plain")) || draggedRecipeId;
+          if (droppedId) {
+            assignRecipeToDay(day, droppedId);
+          }
+        });
+
+        weeklyGrid.appendChild(slot);
+      });
+
+      weeklyGroceryBtn.disabled = filledCount === 0;
+    }
+
+    function buildCombinedGroceryList(recipeIdsList = null) {
+      const allRecipes = getAllRecipes();
+      const targetRecipes = recipeIdsList
+        ? recipeIdsList.map(id => allRecipes.find(r => r.id === id)).filter(Boolean)
+        : allRecipes.filter(r => getSelectedGroceryIds().has(r.id));
+
       const map = new Map();
-      getAllRecipes().filter(r => selected.has(r.id)).forEach(recipe => {
+      targetRecipes.forEach(recipe => {
         recipe.ingredients.forEach(item => {
           if (typeof item !== "string") return;
           const parsed = parseIngredientLine(item);
@@ -2148,7 +2446,20 @@
           : `<span class="meta-tag">Not cooked yet</span>`;
         const card = document.createElement("article");
         card.className = "recipe-card" + (isSelected ? " selected" : "");
+        card.draggable = true;
         card.style.setProperty("--card-accent", recipe.accent || "#C45233");
+        card.addEventListener("dragstart", (e) => {
+          draggedRecipeId = recipe.id;
+          card.classList.add("dragging");
+          if (e.dataTransfer) {
+            e.dataTransfer.setData("text/plain", recipe.id);
+            e.dataTransfer.effectAllowed = "copy";
+          }
+        });
+        card.addEventListener("dragend", () => {
+          card.classList.remove("dragging");
+          draggedRecipeId = null;
+        });
         card.innerHTML = `
           <div class="card-top">
             <div>
@@ -2483,8 +2794,9 @@
     const copyGroceryBtn = document.getElementById("copyGroceryBtn");
     const remindersBtn = document.getElementById("remindersBtn");
 
-    document.getElementById("openGroceryBtn").addEventListener("click", () => {
-      const items = buildCombinedGroceryList();
+    function openGroceryModalWithIds(recipeIdsList = null) {
+      activeGroceryRecipeIds = recipeIdsList;
+      const items = buildCombinedGroceryList(recipeIdsList);
       groceryModalList.innerHTML = items.map(item => `
         <li>
           <span>${item.name}</span>
@@ -2494,6 +2806,80 @@
       copyGroceryBtn.textContent = "Copy for Google Keep";
       remindersBtn.textContent = "Send to Apple Reminders";
       groceryModal.classList.add("visible");
+    }
+
+    document.getElementById("openGroceryBtn").addEventListener("click", () => {
+      openGroceryModalWithIds(null);
+    });
+
+    document.getElementById("weeklyGroceryBtn").addEventListener("click", () => {
+      const plan = getWeeklyPlan();
+      const ids = WEEK_DAYS.map(d => plan[d]).filter(Boolean);
+      if (ids.length === 0) return;
+      openGroceryModalWithIds(ids);
+    });
+
+    document.getElementById("clearWeekBtn").addEventListener("click", () => {
+      setWeeklyPlan({});
+      renderWeeklyPlanner();
+    });
+
+    const syncWeekBtn = document.getElementById("syncWeekBtn");
+    syncWeekBtn.addEventListener("click", async () => {
+      const token = getGitHubToken();
+      if (!token) {
+        openSyncModal();
+        return;
+      }
+      const now = Date.now();
+      const days = getWeeklyPlan();
+      syncWeekBtn.disabled = true;
+      syncWeekBtn.textContent = "Saving...";
+      try {
+        await commitRecipeMetaToGitHub("__weeklyPlan", { days, updatedAt: now }, "Update weekly meal plan", token);
+        RECIPE_META.__weeklyPlan = { days, updatedAt: now };
+        setWeeklyPlan(days, now);
+        syncWeekBtn.textContent = "Saved ✓";
+        showToast("Weekly plan synced to GitHub!", 4000);
+        setTimeout(() => { syncWeekBtn.textContent = "Save to GitHub"; }, 2000);
+      } catch (err) {
+        syncWeekBtn.textContent = "Save to GitHub";
+        showToast(`GitHub sync failed (${err.message}).`, 5000);
+      } finally {
+        syncWeekBtn.disabled = false;
+      }
+    });
+
+    const dayPickerModal = document.getElementById("dayPickerModal");
+    const dayPickerTitle = document.getElementById("dayPickerTitle");
+    const dayPickerList = document.getElementById("dayPickerList");
+    let activePickerDay = null;
+
+    function openDayPicker(day) {
+      activePickerDay = day;
+      dayPickerTitle.textContent = `Pick Recipe for ${day}`;
+      const all = getAllRecipes().slice().sort((a, b) => a.title.localeCompare(b.title));
+      dayPickerList.innerHTML = all.map(r => `
+        <li class="day-picker-item" data-id="${escapeHtml(r.id)}">
+          <span>${escapeHtml(r.title)}</span>
+          <span class="day-picker-meta">${escapeHtml(r.category)}</span>
+        </li>
+      `).join("");
+      dayPickerList.querySelectorAll(".day-picker-item").forEach(li => {
+        li.addEventListener("click", () => {
+          if (activePickerDay) assignRecipeToDay(activePickerDay, li.dataset.id);
+          dayPickerModal.classList.remove("visible");
+        });
+      });
+      dayPickerModal.classList.add("visible");
+    }
+
+    document.getElementById("closeDayPickerBtn").addEventListener("click", () => {
+      dayPickerModal.classList.remove("visible");
+    });
+
+    dayPickerModal.addEventListener("click", (e) => {
+      if (e.target === dayPickerModal) dayPickerModal.classList.remove("visible");
     });
 
     document.getElementById("closeGroceryBtn").addEventListener("click", () => {
@@ -2510,7 +2896,7 @@
     });
 
     function getGroceryPlainText() {
-      const items = buildCombinedGroceryList();
+      const items = buildCombinedGroceryList(activeGroceryRecipeIds);
       return items.map(i => i.qtyText ? `${i.name} (${i.qtyText})` : i.name).join("\n");
     }
 
@@ -2868,6 +3254,7 @@
 
         if (changed) {
           renderFilters();
+          renderWeeklyPlanner();
           renderGrid();
           if (detailView.classList.contains("active") && activeDetailRecipeId) {
             openRecipe(activeDetailRecipeId, false);
@@ -2881,6 +3268,7 @@
     updateSyncUI();
     renderFilters();
     renderSortBar();
+    renderWeeklyPlanner();
     renderGrid();
     syncFromGitHubOnLoad();
 
