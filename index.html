@@ -728,7 +728,8 @@
 
     .card-actions-footer {
       display: flex;
-      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
       gap: 10px;
       padding-top: 12px;
       margin-top: 2px;
@@ -739,29 +740,55 @@
       padding-top: 0;
       margin-top: 0;
       border-top: none;
+      font-size: 0.86rem;
     }
 
-    .card-plan-row {
-      display: flex;
+    .card-plan-pill {
+      position: relative;
+      display: inline-flex;
       align-items: center;
+      gap: 5px;
+      padding: 5px 11px;
+      border-radius: 999px;
+      background: var(--surface-subtle);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      font-weight: 600;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    }
+
+    .card-plan-pill:hover,
+    .card-plan-pill:focus-within {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+
+    .card-plan-pill.assigned {
+      background: var(--accent-soft);
+      border-color: #E8C5B9;
+      color: var(--accent);
+    }
+
+    .card-plan-chevron {
+      font-size: 0.72rem;
+      opacity: 0.75;
     }
 
     .card-day-select {
+      position: absolute;
+      inset: 0;
       width: 100%;
-      padding: 8px 10px;
-      font-family: inherit;
+      height: 100%;
+      opacity: 0;
       font-size: 16px; /* prevents iOS zoom */
-      font-weight: 600;
-      color: var(--text);
-      background: var(--surface-subtle);
-      border: 1.5px solid var(--border);
-      border-radius: 10px;
-      outline: none;
       cursor: pointer;
-    }
-
-    .card-day-select:focus {
-      border-color: var(--accent);
+      margin: 0;
+      border: none;
+      appearance: none;
+      -webkit-appearance: none;
     }
 
     .recipe-card.selected {
@@ -2592,6 +2619,8 @@
         });
         const plan = getWeeklyPlan();
         const allRecipes = getAllRecipes();
+        const assignedDays = WEEK_DAYS.filter(d => plan[d] === recipe.id);
+        const planPillLabel = assignedDays.length > 0 ? assignedDays.join(", ") : "Plan Day";
         const dayOptionsHtml = WEEK_DAYS.map(day => {
           const assignedId = plan[day];
           const assignedRecipe = assignedId ? allRecipes.find(r => r.id === assignedId) : null;
@@ -2618,7 +2647,9 @@
               <input type="checkbox" class="grocery-check" ${isSelected ? "checked" : ""} />
               <span>Add to Grocery List</span>
             </label>
-            <div class="card-plan-row">
+            <div class="card-plan-pill${assignedDays.length > 0 ? " assigned" : ""}">
+              <span>${escapeHtml(planPillLabel)}</span>
+              <span class="card-plan-chevron" aria-hidden="true">&#9662;</span>
               <select class="card-day-select" aria-label="Assign ${escapeHtml(recipe.title)} to a day">
                 <option value="">Assign to Day...</option>
                 ${dayOptionsHtml}
